@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VN Heaven - 完整專案規劃流程圖</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #C9A84C;
+      --gold-light: #e0c76a;
+      --dark: #0f1117;
+      --card: #1a1d27;
+      --card2: #22263a;
+      --text: #e8e8e8;
+      --muted: #8a8fa0;
+      --border: #2a2e3f;
+      --success: #2ecc71;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --info: #3498db;
+      --purple: #9b59b6;
+      --pink: #e91e63;
+    }
+    body { font-family: 'Noto Sans TC', sans-serif; background: var(--dark); color: var(--text); line-height: 1.7; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* Header */
+    .doc-header {
+      text-align: center;
+      padding: 60px 24px 48px;
+      border-bottom: 1px solid var(--border);
+    }
+    .doc-header h1 { font-size: 2.4rem; font-weight: 900; margin-bottom: 8px; }
+    .doc-header h1 .gold { color: var(--gold); }
+    .doc-header p { color: var(--muted); font-size: 1.05rem; }
+    .doc-meta { display: flex; justify-content: center; gap: 32px; margin-top: 20px; flex-wrap: wrap; }
+    .doc-meta .meta-item { font-size: .88rem; color: var(--muted); }
+    .doc-meta .meta-item strong { color: var(--gold); }
+
+    /* TOC */
+    .toc { padding: 32px 0; border-bottom: 1px solid var(--border); }
+    .toc h2 { font-size: 1.2rem; margin-bottom: 16px; color: var(--gold); }
+    .toc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; list-style: none; }
+    .toc-list a { color: var(--text); text-decoration: none; font-size: .9rem; padding: 8px 14px; border-radius: 8px; display: block; transition: .2s; }
+    .toc-list a:hover { background: rgba(201,168,76,.08); color: var(--gold); }
+    .toc-list .toc-num { color: var(--gold); font-weight: 700; margin-right: 8px; }
+
+    /* Sections */
+    .section { padding: 48px 0; border-bottom: 1px solid var(--border); }
+    .section:last-child { border-bottom: none; }
+    .section h2 { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+    .section h2 .num { color: var(--gold); margin-right: 8px; }
+    .section .section-sub { color: var(--muted); font-size: .95rem; margin-bottom: 28px; }
+    .section h3 { font-size: 1.15rem; font-weight: 700; margin: 24px 0 12px; padding-left: 14px; border-left: 3px solid var(--gold); }
+
+    /* Flowchart */
+    .flowchart { display: flex; flex-direction: column; gap: 0; align-items: center; margin: 32px 0; }
+    .flow-phase {
+      width: 100%;
+      max-width: 900px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      position: relative;
+    }
+    .flow-phase:hover { border-color: var(--gold); }
+    .flow-connector {
+      width: 3px;
+      height: 40px;
+      background: linear-gradient(to bottom, var(--gold), rgba(201,168,76,.3));
+      position: relative;
+    }
+    .flow-connector::after {
+      content: '▼';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--gold);
+      font-size: .7rem;
+    }
+    .flow-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+    .flow-num {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .flow-title { font-size: 1.2rem; font-weight: 700; }
+    .flow-timeline { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+    .flow-body { padding-left: 64px; }
+    .flow-steps { list-style: none; }
+    .flow-steps li {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      font-size: .9rem;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .flow-steps li:last-child { border-bottom: none; }
+    .flow-steps .step-icon { flex-shrink: 0; width: 22px; text-align: center; }
+    .flow-sub-phases { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .flow-sub {
+      background: var(--card2);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: .85rem;
+    }
+    .flow-sub .sub-title { font-weight: 600; color: var(--gold); margin-bottom: 6px; font-size: .88rem; }
+
+    /* Phase colors */
+    .phase-1 .flow-num { background: rgba(231,76,60,.2); color: var(--danger); }
+    .phase-2 .flow-num { background: rgba(243,156,18,.2); color: var(--warning); }
+    .phase-3 .flow-num { background: rgba(52,152,219,.2); color: var(--info); }
+    .phase-4 .flow-num { background: rgba(155,89,182,.2); color: var(--purple); }
+    .phase-5 .flow-num { background: rgba(46,204,113,.2); color: var(--success); }
+    .phase-6 .flow-num { background: rgba(201,168,76,.2); color: var(--gold); }
+    .phase-7 .flow-num { background: rgba(233,30,99,.2); color: var(--pink); }
+
+    /* Timeline / Gantt */
+    .gantt-wrapper { overflow-x: auto; margin: 24px 0; }
+    .gantt {
+      min-width: 800px;
+      border-collapse: collapse;
+      width: 100%;
+      font-size: .82rem;
+    }
+    .gantt th, .gantt td {
+      padding: 10px 6px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .gantt th {
+      background: var(--card2);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: .75rem;
+      text-transform: uppercase;
+    }
+    .gantt td:first-child {
+      text-align: left;
+      padding-left: 12px;
+      font-weight: 500;
+      min-width: 180px;
+      white-space: nowrap;
+    }
+    .gantt-bar {
+      height: 22px;
+      border-radius: 4px;
+      min-width: 100%;
+    }
+    .bar-1 { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+    .bar-2 { background: linear-gradient(90deg, #f39c12, #e67e22); }
+    .bar-3 { background: linear-gradient(90deg, #3498db, #2980b9); }
+    .bar-4 { background: linear-gradient(90deg, #9b59b6, #8e44ad); }
+    .bar-5 { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+    .bar-6 { background: linear-gradient(90deg, #C9A84C, #a8882e); }
+    .bar-7 { background: linear-gradient(90deg, #e91e63, #c2185b); }
+
+    /* Budget tables */
+    .budget-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+      margin: 16px 0;
+    }
+    .budget-table th, .budget-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    .budget-table th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      background: var(--card2);
+    }
+    .budget-table tr:hover { background: rgba(201,168,76,.04); }
+    .budget-table .amount { color: var(--gold); font-weight: 700; text-align: right; white-space: nowrap; }
+    .budget-table .subtotal { background: var(--card2); font-weight: 700; }
+    .budget-table .subtotal .amount { color: var(--warning); font-size: 1rem; }
+    .budget-table .total { background: rgba(201,168,76,.1); font-weight: 800; font-size: 1rem; }
+    .budget-table .total .amount { color: var(--gold); font-size: 1.15rem; }
+    .budget-table .note { color: var(--muted); font-size: .78rem; }
+
+    /* Summary cards */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 24px 0; }
+    .summary-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+    }
+    .summary-card .sc-label { font-size: .82rem; color: var(--muted); margin-bottom: 6px; }
+    .summary-card .sc-value { font-size: 1.8rem; font-weight: 800; color: var(--gold); }
+    .summary-card .sc-sub { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+
+    /* Risk table */
+    .risk-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: .75rem; font-weight: 600; }
+    .risk-high { background: rgba(231,76,60,.2); color: var(--danger); }
+    .risk-mid { background: rgba(243,156,18,.2); color: var(--warning); }
+    .risk-low { background: rgba(46,204,113,.2); color: var(--success); }
+
+    /* Print */
+    @media print {
+      body { background: #fff; color: #222; }
+      .flow-phase, .summary-card { border-color: #ccc; background: #f9f9f9; }
+      .budget-table th { background: #eee; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .doc-header h1 { font-size: 1.6rem; }
+      .flow-body { padding-left: 0; }
+      .flow-sub-phases { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+      .doc-meta { gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header -->
+    <div class="doc-header">
+      <h1><span class="gold">VN Heaven</span> 完整專案規劃</h1>
+      <p>跨國移工生活圈投資計畫 — 從募資到營運全流程規劃</p>
+      <div class="doc-meta">
+        <div class="meta-item">總工期：<strong>約 12-14 個月</strong></div>
+        <div class="meta-item">總預算：<strong>NT$8,500,000 - 12,800,000</strong></div>
+        <div class="meta-item">更新日期：<strong>2025/04/05</strong></div>
+      </div>
+    </div>
+
+    <!-- Overview Summary -->
+    <div class="section" style="border-bottom:none;padding-bottom:0">
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="sc-label">總工期</div>
+          <div class="sc-value">12-14</div>
+          <div class="sc-sub">個月（從募資啟動到正式營運）</div>
+        </div>
+        <div class="summary-card">
+          <div class="sc-label">預估總預算</div>
+          <div class="sc-value">850-1,280萬</div>
+          <div class="sc-sub">新台幣（含硬體+軟體+營運）</div>
+        </div>
+        <div class="summary-card">
+          <div class="sc-label">規劃階段</div>
+          <div class="sc-value">7</div>
+          <div class="sc-sub">大階段，37+ 子任務</div>
+        </div>
+        <div class="summary-card">
+          <div class="sc-label">預估床位規模</div>
+          <div class="sc-value">150-300</div>
+          <div class="sc-sub">床位（首期 1-2 棟宿舍）</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOC -->
+    <div class="toc">
+      <h2>目錄</h2>
+      <ul class="toc-list">
+        <li><a href="#phase1"><span class="toc-num">01</span>募資與行銷階段</a></li>
+        <li><a href="#phase2"><span class="toc-num">02</span>公司設立與法規合規</a></li>
+        <li><a href="#phase3"><span class="toc-num">03</span>宿舍租賃與改建工程</a></li>
+        <li><a href="#phase4"><span class="toc-num">04</span>軟體平台開發與部署</a></li>
+        <li><a href="#phase5"><span class="toc-num">05</span>硬體設備採購與安裝</a></li>
+        <li><a href="#phase6"><span class="toc-num">06</span>系統串接與整合測試</a></li>
+        <li><a href="#phase7"><span class="toc-num">07</span>試營運與正式上線</a></li>
+        <li><a href="#timeline"><span class="toc-num">08</span>甘特圖時程總覽</a></li>
+        <li><a href="#budget"><span class="toc-num">09</span>預算明細總表</a></li>
+        <li><a href="#risk"><span class="toc-num">10</span>風險評估與應對</a></li>
+      </ul>
+    </div>
+
+    <!-- ==================== FLOWCHART ==================== -->
+
+    <div class="section" id="flowchart">
+      <h2>完整流程圖</h2>
+      <p class="section-sub">7 大階段從上到下依序執行，部分階段可同步進行</p>
+
+      <div class="flowchart">
+
+        <!-- Phase 1 -->
+        <div class="flow-phase phase-1" id="phase1">
+          <div class="flow-header">
+            <div class="flow-num">1</div>
+            <div>
+              <div class="flow-title">募資與行銷階段</div>
+              <div class="flow-timeline">Month 1-3 ｜預估 3 個月</div>
+            </div>
+          </div>
+          <div class="flow-body">
+            <ul class="flow-steps">
+              <li><span class="step-icon">📄</span>撰寫投資企劃書（含財務預測、回報模型、退場機制）</li>
+              <li><span class="step-icon">🌐</span>建置募資宣傳網站（Landing Page + 表單收集投資人資料）</li>
+              <li><span class="step-icon">📱</span>社群行銷推廣（Facebook、LINE 群組、仲介公司合作推廣）</li>
+              <li><span class="step-icon">🤝</span>舉辦投資說明會（線上 + 線下，每月至少 2 場）</li>
+              <li><span class="step-icon">📋</span>投資人簽約與資金到位（5萬/份，目標募集 200-400 份）</li>
+              <li><span class="step-icon">💼</span>設立專用信託帳戶，確保資金安全透明</li>
+            </ul>
+            <div class="flow-sub-phases">
+              <div class="flow-sub">
+                <div class="sub-title">已完成項目</div>
+                ✅ 投資文案撰寫<br>
+                ✅ 募資宣傳網站（Landing Page）<br>
+                ✅ 表單系統（自動寄送 Email）
+              </div>
+              <div class="flow-sub">
+                <div class="sub-title">此階段產出</div>
+                📊 正式投資企劃書<br>
+                📝 投資合約範本<br>
+                💰 首期資金到位（目標 1,000-2,000 萬）
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-connector"></div>
+
+        <!-- Phase 2 -->
+        <div class="flow-phase phase-2" id="phase2">
+          <div class="flow-header">
+            <div class="flow-num">2</div>
+            <div>
+              <div class="flow-title">公司設立與法規合規</div>
+              <div class="flow-timeline">Month 2-4 ｜預估 2-3 個月（與階段1部分重疊）</div>
+            </div>
+          </div>
+          <div class="flow-body">
+            <ul class="flow-steps">
+              <li><span class="step-icon">🏢</span>設立有限公司或股份有限公司（資本額登記）</li>
+              <li><span class="step-icon">📜</span>取得營利事業登記證、統一編號</li>
+              <li><span class="step-icon">🏠</span>申請「移工宿舍」相關許可（符合《就業服務法》§40 規定）</li>
+              <li><span class="step-icon">🔥</span>建築物公共安全檢查申報（消防、逃生、建物用途變更）</li>
+              <li><span class="step-icon">⚖️</span>擬定投資人合約、商家進駐合約、B2B 租賃合約</li>
+              <li><span class="step-icon">🛡️</span>投保公共意外責任險、火災保險</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flow-connector"></div>
+
+        <!-- Phase 3 -->
+        <div class="flow-phase phase-3" id="phase3">
+          <div class="flow-header">
+            <div class="flow-num">3</div>
+            <div>
+              <div class="flow-title">宿舍租賃與改建工程</div>
+              <div class="flow-timeline">Month 3-7 ｜預估 4-5 個月</div>
+            </div>
+          </div>
+          <div class="flow-body">
+            <h3>3-1. 場地選址與租賃</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">🔍</span>工業區/都市邊緣尋找適合建物（需符合宿舍法規用途）</li>
+              <li><span class="step-icon">📐</span>場勘評估：面積、樓層、承重、水電容量、周邊交通</li>
+              <li><span class="step-icon">📝</span>簽訂長期租約（至少 5 年，含優先續約權）</li>
+              <li><span class="step-icon">💰</span>租金預估：每棟月租 8-15 萬（依地段/面積而異）</li>
+            </ul>
+            <h3>3-2. 改建工程</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">📏</span>空間規劃設計（床位配置、衛浴、廚房、公共區域）</li>
+              <li><span class="step-icon">🔨</span>隔間工程（輕鋼架隔間、上下鋪床位、個人置物櫃）</li>
+              <li><span class="step-icon">🚿</span>衛浴工程（依法規每 8-10 人配 1 間衛浴）</li>
+              <li><span class="step-icon">⚡</span>水電工程（獨立電表、網路佈線、每床位插座 + USB）</li>
+              <li><span class="step-icon">🧯</span>消防工程（煙霧偵測器、滅火器、逃生指示燈、灑水系統）</li>
+              <li><span class="step-icon">❄️</span>空調工程（分離式冷氣或中央空調）</li>
+              <li><span class="step-icon">📹</span>監控安防（公共區域 CCTV、門禁刷卡系統）</li>
+            </ul>
+            <div class="flow-sub-phases">
+              <div class="flow-sub">
+                <div class="sub-title">首期規模目標</div>
+                🏠 1-2 棟建物<br>
+                🛏️ 150-300 個床位<br>
+                🚿 20-40 間衛浴<br>
+                🍳 2-4 間共用廚房
+              </div>
+              <div class="flow-sub">
+                <div class="sub-title">改建工期估算</div>
+                📏 設計規劃：2-3 週<br>
+                🔨 主體施工：8-12 週<br>
+                🧹 收尾驗收：1-2 週<br>
+                📋 消防/建管檢查：1-2 週
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-connector"></div>
+
+        <!-- Phase 4 -->
+        <div class="flow-phase phase-4" id="phase4">
+          <div class="flow-header">
+            <div class="flow-num">4</div>
+            <div>
+              <div class="flow-title">軟體平台開發與部署</div>
+              <div class="flow-timeline">Month 3-8 ｜預估 5-6 個月（與工程同步進行）</div>
+            </div>
+          </div>
+          <div class="flow-body">
+            <h3>4-1. 前台使用者平台（VN Heaven）</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">🛒</span>電商購物系統（商品瀏覽、購物車、結帳、訂單追蹤）</li>
+              <li><span class="step-icon">🍽️</span>合作餐廳介紹頁（優惠資訊、評分、篩選）</li>
+              <li><span class="step-icon">🎤</span>KTV 預訂系統（包廂選擇、日期時間、線上預約）</li>
+              <li><span class="step-icon">💆</span>娛樂休閒頁面（按摩會館、健身房介紹與方案）</li>
+              <li><span class="step-icon">🧺</span>洗衣機監控系統（即時狀態、線上支付、倒計時）</li>
+              <li><span class="step-icon">💱</span>即時換匯系統（台幣⇄越南盾，匯率更新）</li>
+              <li><span class="step-icon">🎰</span>行銷活動系統（抽獎、促銷、優惠券）</li>
+            </ul>
+            <h3>4-2. 商家管理後台</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">📦</span>商品管理 CRUD（WooCommerce 模式）</li>
+              <li><span class="step-icon">📋</span>訂單管理（待處理→處理中→出貨→完成）</li>
+              <li><span class="step-icon">📊</span>庫存管理 + 營收報表</li>
+            </ul>
+            <h3>4-3. 網站管理後台</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">👥</span>用戶管理（權限劃分：管理員/商家/用戶）</li>
+              <li><span class="step-icon">🏪</span>商家審核與管理</li>
+              <li><span class="step-icon">📈</span>數據儀表板（營收、訂單、會員統計）</li>
+              <li><span class="step-icon">⚙️</span>系統設定（運費、幣別、維護模式）</li>
+            </ul>
+            <h3>4-4. 部署與維運</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">☁️</span>雲端部署（AWS / GCP / Azure）+ CDN 加速</li>
+              <li><span class="step-icon">🔒</span>SSL 憑證、資安防護、DDoS 防禦</li>
+              <li><span class="step-icon">📱</span>PWA 行動版本或 APP 封裝（Phase 2 規劃）</li>
+              <li><span class="step-icon">🗄️</span>資料庫建置（PostgreSQL / MySQL + Redis 快取）</li>
+            </ul>
+            <div class="flow-sub-phases">
+              <div class="flow-sub">
+                <div class="sub-title">已完成項目</div>
+                ✅ 前台首頁 + 頂部導覽<br>
+                ✅ 電商購物系統<br>
+                ✅ 餐廳/KTV/洗衣/娛樂頁面<br>
+                ✅ 商家後台（WooCommerce 模式）<br>
+                ✅ 管理員後台<br>
+                ✅ 角色權限系統<br>
+                ✅ 抽獎活動頁面<br>
+                ✅ 訪客瀏覽模式
+              </div>
+              <div class="flow-sub">
+                <div class="sub-title">待開發項目</div>
+                ⬜ 後端 API 開發（Node.js / Python）<br>
+                ⬜ 正式資料庫遷移（localStorage→DB）<br>
+                ⬜ 金流串接（綠界/藍新）<br>
+                ⬜ 即時換匯 API 串接<br>
+                ⬜ 推播通知系統<br>
+                ⬜ 多語系（越/泰/菲/印尼）
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-connector"></div>
+
+        <!-- Phase 5 -->
+        <div class="flow-phase phase-5" id="phase5">
+          <div class="flow-header">
+            <div class="flow-num">5</div>
+            <div>
+              <div class="flow-title">硬體設備採購與安裝</div>
+              <div class="flow-timeline">Month 6-9 ｜預估 2-3 個月（配合工程收尾）</div>
+            </div>
+          </div>
+          <div class="flow-body">
+            <ul class="flow-steps">
+              <li><span class="step-icon">🛏️</span>宿舍家具（上下鋪鐵床、床墊、置物櫃、桌椅）</li>
+              <li><span class="step-icon">🧺</span>投幣式/掃碼洗衣機 + 烘乾機（8-12台）</li>
+              <li><span class="step-icon">🥤</span>自動販賣機（飲料、零食、日用品）2-4 台</li>
+              <li><span class="step-icon">📶</span>網路設備（企業級 Wi-Fi AP、交換機、光纖）</li>
+              <li><span class="step-icon">📹</span>CCTV 監控系統（攝影機 + NVR 錄影主機）</li>
+              <li><span class="step-icon">🚪</span>門禁系統（刷卡/人臉辨識 + 電磁鎖）</li>
+              <li><span class="step-icon">📺</span>公共區域設備（電視、飲水機、微波爐）</li>
+              <li><span class="step-icon">🖥️</span>管理辦公室設備（電腦、印表機、POS 機）</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flow-connector"></div>
+
+        <!-- Phase 6 -->
+        <div class="flow-phase phase-6" id="phase6">
+          <div class="flow-header">
+            <div class="flow-num">6</div>
+            <div>
+              <div class="flow-title">系統串接與整合測試</div>
+              <div class="flow-timeline">Month 8-10 ｜預估 2-3 個月</div>
+            </div>
+          </div>
+          <div class="flow-body">
+            <h3>6-1. 硬體 ⇄ 軟體串接</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">🧺</span>洗衣機 IoT 串接（機台狀態即時回傳平台、線上支付觸發啟動）</li>
+              <li><span class="step-icon">🚪</span>門禁系統串接（住戶 ID 綁定、進出紀錄同步）</li>
+              <li><span class="step-icon">📹</span>CCTV 遠端監控整合（管理後台即時影像）</li>
+              <li><span class="step-icon">🥤</span>販賣機庫存管理串接</li>
+            </ul>
+            <h3>6-2. 第三方服務串接</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">💳</span>金流服務串接（綠界 ECPay / 藍新 NewebPay）</li>
+              <li><span class="step-icon">💱</span>換匯 API 串接（即時匯率）</li>
+              <li><span class="step-icon">📧</span>通知系統（SMS、Email、LINE 推播）</li>
+              <li><span class="step-icon">🗺️</span>地圖 API（Google Maps 餐廳/KTV 導航）</li>
+            </ul>
+            <h3>6-3. 測試與驗收</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">🧪</span>功能測試（全平台功能逐項驗證）</li>
+              <li><span class="step-icon">📱</span>跨裝置測試（手機/平板/電腦、多瀏覽器）</li>
+              <li><span class="step-icon">⚡</span>壓力測試（模擬 500+ 同時在線）</li>
+              <li><span class="step-icon">🔒</span>資安滲透測試</li>
+              <li><span class="step-icon">👥</span>Beta 測試（邀請 20-30 名移工實測）</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flow-connector"></div>
+
+        <!-- Phase 7 -->
+        <div class="flow-phase phase-7" id="phase7">
+          <div class="flow-header">
+            <div class="flow-num">7</div>
+            <div>
+              <div class="flow-title">試營運與正式上線</div>
+              <div class="flow-timeline">Month 10-14 ｜預估 3-4 個月</div>
+            </div>
+          </div>
+          <div class="flow-body">
+            <h3>7-1. 試營運（2 個月）</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">🏠</span>首批住戶入住（目標 30-50% 入住率）</li>
+              <li><span class="step-icon">🏪</span>首批商家上架（5-10 家合作商家）</li>
+              <li><span class="step-icon">🤝</span>B2B 簽約（對接仲介公司、工廠、營造單位）</li>
+              <li><span class="step-icon">📊</span>營運數據收集與分析</li>
+              <li><span class="step-icon">🐛</span>Bug 修復與系統優化</li>
+              <li><span class="step-icon">📋</span>SOP 制定（房務管理、客訴處理、緊急應變）</li>
+            </ul>
+            <h3>7-2. 正式上線</h3>
+            <ul class="flow-steps">
+              <li><span class="step-icon">🚀</span>正式對外營運</li>
+              <li><span class="step-icon">📢</span>行銷推廣（仲介管道、社群媒體、移工社團）</li>
+              <li><span class="step-icon">📈</span>投資人報表系統上線（透明化營運數據）</li>
+              <li><span class="step-icon">🔄</span>持續迭代（依用戶反饋持續優化）</li>
+              <li><span class="step-icon">📍</span>規劃第二據點展店</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== GANTT CHART ==================== -->
+
+    <div class="section" id="timeline">
+      <h2><span class="num">08</span>甘特圖 — 時程總覽</h2>
+      <p class="section-sub">14 個月總工期，各階段可適度重疊以加速推進</p>
+
+      <div class="gantt-wrapper">
+        <table class="gantt">
+          <thead>
+            <tr>
+              <th>階段</th>
+              <th>M1</th><th>M2</th><th>M3</th><th>M4</th><th>M5</th><th>M6</th><th>M7</th>
+              <th>M8</th><th>M9</th><th>M10</th><th>M11</th><th>M12</th><th>M13</th><th>M14</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1. 募資與行銷</td>
+              <td><div class="gantt-bar bar-1"></div></td>
+              <td><div class="gantt-bar bar-1"></div></td>
+              <td><div class="gantt-bar bar-1"></div></td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td>2. 公司設立/法規</td>
+              <td></td>
+              <td><div class="gantt-bar bar-2"></div></td>
+              <td><div class="gantt-bar bar-2"></div></td>
+              <td><div class="gantt-bar bar-2"></div></td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td>3. 宿舍租賃/改建</td>
+              <td></td><td></td>
+              <td><div class="gantt-bar bar-3"></div></td>
+              <td><div class="gantt-bar bar-3"></div></td>
+              <td><div class="gantt-bar bar-3"></div></td>
+              <td><div class="gantt-bar bar-3"></div></td>
+              <td><div class="gantt-bar bar-3"></div></td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td>4. 軟體平台開發</td>
+              <td></td><td></td>
+              <td><div class="gantt-bar bar-4"></div></td>
+              <td><div class="gantt-bar bar-4"></div></td>
+              <td><div class="gantt-bar bar-4"></div></td>
+              <td><div class="gantt-bar bar-4"></div></td>
+              <td><div class="gantt-bar bar-4"></div></td>
+              <td><div class="gantt-bar bar-4"></div></td>
+              <td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td>5. 硬體設備採購</td>
+              <td></td><td></td><td></td><td></td><td></td>
+              <td><div class="gantt-bar bar-5"></div></td>
+              <td><div class="gantt-bar bar-5"></div></td>
+              <td><div class="gantt-bar bar-5"></div></td>
+              <td><div class="gantt-bar bar-5"></div></td>
+              <td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td>6. 系統串接/測試</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+              <td><div class="gantt-bar bar-6"></div></td>
+              <td><div class="gantt-bar bar-6"></div></td>
+              <td><div class="gantt-bar bar-6"></div></td>
+              <td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td>7. 試營運/正式上線</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+              <td><div class="gantt-bar bar-7"></div></td>
+              <td><div class="gantt-bar bar-7"></div></td>
+              <td><div class="gantt-bar bar-7"></div></td>
+              <td><div class="gantt-bar bar-7"></div></td>
+              <td><div class="gantt-bar bar-7"></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== BUDGET ==================== -->
+
+    <div class="section" id="budget">
+      <h2><span class="num">09</span>預算明細總表</h2>
+      <p class="section-sub">以首期 1 棟宿舍（約 150 床位）為基準估算，實際金額依地區/規模調整</p>
+
+      <h3>Phase 1 — 募資與行銷</h3>
+      <table class="budget-table">
+        <thead><tr><th>項目</th><th>說明</th><th>預估金額</th></tr></thead>
+        <tbody>
+          <tr><td>投資企劃書製作</td><td>含財務模型、法律審查</td><td class="amount">NT$50,000 - 100,000</td></tr>
+          <tr><td>宣傳網站開發</td><td>Landing Page + 表單系統</td><td class="amount">NT$30,000 - 80,000</td></tr>
+          <tr><td>社群廣告投放</td><td>Facebook / Google Ads，3個月</td><td class="amount">NT$100,000 - 200,000</td></tr>
+          <tr><td>說明會場地租借</td><td>每月2場 × 3個月</td><td class="amount">NT$30,000 - 60,000</td></tr>
+          <tr><td>印刷品/宣傳物</td><td>DM、名片、簡報製作</td><td class="amount">NT$20,000 - 40,000</td></tr>
+          <tr class="subtotal"><td colspan="2">小計</td><td class="amount">NT$230,000 - 480,000</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Phase 2 — 公司設立與法規</h3>
+      <table class="budget-table">
+        <thead><tr><th>項目</th><th>說明</th><th>預估金額</th></tr></thead>
+        <tbody>
+          <tr><td>公司登記</td><td>會計師費用 + 資本額</td><td class="amount">NT$50,000 - 100,000</td></tr>
+          <tr><td>律師顧問費</td><td>合約擬定、法規諮詢</td><td class="amount">NT$100,000 - 200,000</td></tr>
+          <tr><td>保險費用</td><td>公共意外責任險 + 火災險（年繳）</td><td class="amount">NT$80,000 - 150,000</td></tr>
+          <tr><td>消防/建管申請</td><td>檢查費、變更用途規費</td><td class="amount">NT$50,000 - 120,000</td></tr>
+          <tr class="subtotal"><td colspan="2">小計</td><td class="amount">NT$280,000 - 570,000</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Phase 3 — 宿舍租賃與改建（最大支出）</h3>
+      <table class="budget-table">
+        <thead><tr><th>項目</th><th>說明</th><th>預估金額</th></tr></thead>
+        <tbody>
+          <tr><td>租金押金</td><td>押二付一（月租 10-15萬）</td><td class="amount">NT$300,000 - 450,000</td></tr>
+          <tr><td>前期租金</td><td>施工期 3-4 個月空租</td><td class="amount">NT$400,000 - 600,000</td></tr>
+          <tr><td>設計規劃費</td><td>室內設計 + 施工圖</td><td class="amount">NT$80,000 - 150,000</td></tr>
+          <tr><td>隔間工程</td><td>輕鋼架隔間、天花板</td><td class="amount">NT$500,000 - 800,000</td></tr>
+          <tr><td>衛浴工程</td><td>20-30 間衛浴新建/翻修</td><td class="amount">NT$600,000 - 1,000,000</td></tr>
+          <tr><td>水電工程</td><td>配電盤、管線、網路佈線</td><td class="amount">NT$400,000 - 700,000</td></tr>
+          <tr><td>消防工程</td><td>偵煙器、滅火器、灑水、逃生燈</td><td class="amount">NT$300,000 - 500,000</td></tr>
+          <tr><td>空調工程</td><td>分離式冷氣 15-25 台</td><td class="amount">NT$400,000 - 700,000</td></tr>
+          <tr><td>地板/油漆</td><td>塑膠地板、牆面粉刷</td><td class="amount">NT$200,000 - 350,000</td></tr>
+          <tr><td>門禁/監控預配線</td><td>預留管線、弱電施工</td><td class="amount">NT$100,000 - 200,000</td></tr>
+          <tr class="subtotal"><td colspan="2">小計</td><td class="amount">NT$3,280,000 - 5,450,000</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Phase 4 — 軟體平台開發</h3>
+      <table class="budget-table">
+        <thead><tr><th>項目</th><th>說明</th><th>預估金額</th></tr></thead>
+        <tbody>
+          <tr><td>前端開發</td><td>使用者平台 + 管理後台（已完成原型）</td><td class="amount">NT$300,000 - 500,000</td></tr>
+          <tr><td>後端 API 開發</td><td>Node.js / Python，含資料庫設計</td><td class="amount">NT$400,000 - 700,000</td></tr>
+          <tr><td>金流串接</td><td>綠界/藍新 + 跨境支付</td><td class="amount">NT$80,000 - 150,000</td></tr>
+          <tr><td>換匯系統開發</td><td>即時匯率 API + 交易系統</td><td class="amount">NT$100,000 - 200,000</td></tr>
+          <tr><td>雲端部署</td><td>AWS/GCP 首年費用 + SSL + CDN</td><td class="amount">NT$60,000 - 120,000</td></tr>
+          <tr><td>多語系翻譯</td><td>越/泰/菲/印尼 4 語</td><td class="amount">NT$60,000 - 120,000</td></tr>
+          <tr><td>UI/UX 設計</td><td>專業設計師優化介面</td><td class="amount">NT$80,000 - 150,000</td></tr>
+          <tr class="subtotal"><td colspan="2">小計</td><td class="amount">NT$1,080,000 - 1,940,000</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Phase 5 — 硬體設備</h3>
+      <table class="budget-table">
+        <thead><tr><th>項目</th><th>說明</th><th>預估金額</th></tr></thead>
+        <tbody>
+          <tr><td>床鋪家具</td><td>上下鋪鐵床 75 組 + 床墊 150 張 + 置物櫃</td><td class="amount">NT$600,000 - 900,000</td></tr>
+          <tr><td>洗衣機/烘乾機</td><td>商用投幣式 8-12 台</td><td class="amount">NT$400,000 - 600,000</td></tr>
+          <tr><td>自動販賣機</td><td>飲料 + 零食 + 日用品，2-4 台</td><td class="amount">NT$200,000 - 400,000</td></tr>
+          <tr><td>網路設備</td><td>光纖 + 企業 AP + 交換機</td><td class="amount">NT$80,000 - 150,000</td></tr>
+          <tr><td>CCTV 監控</td><td>攝影機 16-24 支 + NVR</td><td class="amount">NT$120,000 - 200,000</td></tr>
+          <tr><td>門禁系統</td><td>刷卡機 + 電磁鎖 + 管理主機</td><td class="amount">NT$100,000 - 180,000</td></tr>
+          <tr><td>公共區域設備</td><td>電視、飲水機、微波爐、桌椅</td><td class="amount">NT$100,000 - 200,000</td></tr>
+          <tr><td>辦公室設備</td><td>電腦、印表機、辦公桌椅</td><td class="amount">NT$60,000 - 100,000</td></tr>
+          <tr class="subtotal"><td colspan="2">小計</td><td class="amount">NT$1,660,000 - 2,730,000</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Phase 6 — 系統串接與測試</h3>
+      <table class="budget-table">
+        <thead><tr><th>項目</th><th>說明</th><th>預估金額</th></tr></thead>
+        <tbody>
+          <tr><td>IoT 串接開發</td><td>洗衣機/門禁 IoT 模組 + 開發</td><td class="amount">NT$150,000 - 300,000</td></tr>
+          <tr><td>第三方 API 費用</td><td>金流手續費設定、地圖 API、SMS</td><td class="amount">NT$30,000 - 60,000</td></tr>
+          <tr><td>資安檢測</td><td>滲透測試 + 弱點掃描</td><td class="amount">NT$50,000 - 100,000</td></tr>
+          <tr><td>Beta 測試費用</td><td>測試獎勵金 + 修復工時</td><td class="amount">NT$30,000 - 50,000</td></tr>
+          <tr class="subtotal"><td colspan="2">小計</td><td class="amount">NT$260,000 - 510,000</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Phase 7 — 試營運期間</h3>
+      <table class="budget-table">
+        <thead><tr><th>項目</th><th>說明</th><th>預估金額</th></tr></thead>
+        <tbody>
+          <tr><td>人事費用</td><td>管理員 2 名 + 房務 2 名（4 個月）</td><td class="amount">NT$500,000 - 700,000</td></tr>
+          <tr><td>營運租金</td><td>試營運期 4 個月租金</td><td class="amount">NT$400,000 - 600,000</td></tr>
+          <tr><td>水電瓦斯</td><td>公共區域 + 辦公室（4 個月）</td><td class="amount">NT$80,000 - 160,000</td></tr>
+          <tr><td>行銷推廣</td><td>開幕活動 + 社群廣告</td><td class="amount">NT$100,000 - 200,000</td></tr>
+          <tr><td>雜支/預備金</td><td>不可預見支出緩衝</td><td class="amount">NT$100,000 - 200,000</td></tr>
+          <tr class="subtotal"><td colspan="2">小計</td><td class="amount">NT$1,180,000 - 1,860,000</td></tr>
+        </tbody>
+      </table>
+
+      <!-- TOTAL -->
+      <h3>總預算匯總</h3>
+      <table class="budget-table">
+        <thead><tr><th>階段</th><th>說明</th><th>預估金額</th></tr></thead>
+        <tbody>
+          <tr><td>Phase 1</td><td>募資與行銷</td><td class="amount">NT$230,000 - 480,000</td></tr>
+          <tr><td>Phase 2</td><td>公司設立與法規</td><td class="amount">NT$280,000 - 570,000</td></tr>
+          <tr><td>Phase 3</td><td>宿舍租賃與改建</td><td class="amount">NT$3,280,000 - 5,450,000</td></tr>
+          <tr><td>Phase 4</td><td>軟體平台開發</td><td class="amount">NT$1,080,000 - 1,940,000</td></tr>
+          <tr><td>Phase 5</td><td>硬體設備採購</td><td class="amount">NT$1,660,000 - 2,730,000</td></tr>
+          <tr><td>Phase 6</td><td>系統串接與測試</td><td class="amount">NT$260,000 - 510,000</td></tr>
+          <tr><td>Phase 7</td><td>試營運期間</td><td class="amount">NT$1,180,000 - 1,860,000</td></tr>
+          <tr class="total"><td colspan="2">總計</td><td class="amount">NT$7,970,000 - 13,540,000</td></tr>
+        </tbody>
+      </table>
+      <p style="color:var(--muted);font-size:.82rem;margin-top:8px">※ 建議預算抓取中間值約 NT$1,000-1,200 萬，並保留 10-15% 預備金</p>
+    </div>
+
+    <!-- ==================== RISK ==================== -->
+
+    <div class="section" id="risk">
+      <h2><span class="num">10</span>風險評估與應對策略</h2>
+      <p class="section-sub">主要風險項目及建議應對方式</p>
+
+      <table class="budget-table">
+        <thead><tr><th>風險項目</th><th>等級</th><th>影響</th><th>應對策略</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>募資進度不如預期</td>
+            <td><span class="risk-badge risk-high">高</span></td>
+            <td>資金缺口影響後續工程</td>
+            <td>分期啟動、優先募集核心資金；備案：銀行融資</td>
+          </tr>
+          <tr>
+            <td>法規審批延遲</td>
+            <td><span class="risk-badge risk-mid">中</span></td>
+            <td>開工/營運時程延後</td>
+            <td>提前 2 個月送件；聘請專業代辦加速流程</td>
+          </tr>
+          <tr>
+            <td>工程延期/超支</td>
+            <td><span class="risk-badge risk-high">高</span></td>
+            <td>影響入住時程、追加成本</td>
+            <td>合約明訂工期罰則；預留 15% 工程預備金</td>
+          </tr>
+          <tr>
+            <td>入住率低於預期</td>
+            <td><span class="risk-badge risk-mid">中</span></td>
+            <td>營收不足以覆蓋成本</td>
+            <td>提前簽訂 B2B 長約；加強仲介合作推廣</td>
+          </tr>
+          <tr>
+            <td>移工政策變動</td>
+            <td><span class="risk-badge risk-low">低</span></td>
+            <td>市場需求波動</td>
+            <td>多元收入來源降低依賴；持續追蹤政策動態</td>
+          </tr>
+          <tr>
+            <td>系統開發延遲</td>
+            <td><span class="risk-badge risk-mid">中</span></td>
+            <td>平台功能不完整影響體驗</td>
+            <td>MVP 先行上線；核心功能優先、進階功能迭代</td>
+          </tr>
+          <tr>
+            <td>資安事件</td>
+            <td><span class="risk-badge risk-mid">中</span></td>
+            <td>用戶資料外洩、信譽損失</td>
+            <td>定期資安檢測；加密儲存；投保資安險</td>
+          </tr>
+          <tr>
+            <td>競爭者進入</td>
+            <td><span class="risk-badge risk-low">低</span></td>
+            <td>市場份額被瓜分</td>
+            <td>先行者優勢；建立品牌忠誠度；持續優化服務</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:20px;">
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:4px;margin-bottom:8px;">
+        <span style="font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,#FFD700,#C9A84C,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px;font-style:italic;">VN</span>
+        <span style="font-size:1rem;font-weight:300;color:var(--text);letter-spacing:3px;text-transform:uppercase;">Heaven</span>
+      </div>
+      <p style="color:var(--muted);font-size:.82rem;">跨國移工生活圈投資計畫 — 完整專案規劃文件</p>
+      <p style="color:var(--muted);font-size:.78rem;margin-top:4px;">本文件僅供內部規劃參考，預算為預估範圍，實際依市場行情調整</p>
+    </div>
+
+  </div>
+
+  <script>
+    // Smooth scroll for TOC links
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) window.scrollTo({ top: target.offsetTop - 20, behavior: 'smooth' });
+      });
+    });
+  </script>
+
+</body>
+</html>

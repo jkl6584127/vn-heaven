@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VN Heaven - 娛樂</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .ent-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: .2s; }
+    .ent-card:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+    .ent-img { height: 200px; overflow: hidden; position: relative; }
+    .ent-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
+    .ent-card:hover .ent-img img { transform: scale(1.05); }
+    .ent-type-badge { position: absolute; top: 12px; left: 12px; padding: 4px 14px; border-radius: 20px; font-size: .75rem; font-weight: 700; }
+    .type-massage { background: rgba(155,89,182,.85); color: #fff; }
+    .type-gym { background: rgba(46,204,113,.85); color: #fff; }
+    .ent-body { padding: 20px; }
+    .ent-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .ent-name { font-size: 1.15rem; font-weight: 700; }
+    .ent-rating { color: var(--gold); font-weight: 600; font-size: .9rem; white-space: nowrap; }
+    .ent-discount { background: linear-gradient(90deg, rgba(201,168,76,.15), rgba(201,168,76,.03)); border-left: 3px solid var(--gold); padding: 8px 14px; border-radius: 0 8px 8px 0; margin-bottom: 12px; font-weight: 600; color: var(--gold); font-size: .88rem; }
+    .ent-desc { font-size: .88rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px; }
+    .ent-services { margin-bottom: 14px; }
+    .ent-services h4 { font-size: .82rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .service-item { display: flex; justify-content: space-between; padding: 7px 12px; background: var(--bg-dark); border-radius: 6px; font-size: .85rem; margin-bottom: 4px; }
+    .service-item .service-price { color: var(--gold); font-weight: 600; }
+    .ent-features { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .ent-feature { padding: 3px 10px; background: var(--bg-card2); border: 1px solid var(--border); border-radius: 20px; font-size: .75rem; color: var(--text-muted); }
+    .ent-info { font-size: .82rem; color: var(--text-muted); }
+    .ent-info div { margin-bottom: 3px; }
+    .ent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 22px; }
+    .stars { color: var(--gold); letter-spacing: 2px; }
+    @media (max-width: 768px) {
+      .ent-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .ent-img { height: 140px; }
+      .ent-body { padding: 12px; }
+      .ent-name { font-size: .95rem; }
+      .ent-desc { font-size: .78rem; -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+      .ent-services h4 { font-size: .75rem; }
+      .service-item { font-size: .78rem; padding: 5px 8px; }
+      .ent-feature { font-size: .68rem; }
+      .ent-info { font-size: .72rem; }
+      .ent-discount { font-size: .78rem; padding: 6px 10px; }
+    }
+    @media (max-width: 480px) {
+      .ent-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="page-topnav">
+  <div class="main-content">
+    <div class="page-header">
+      <h1>娛樂休閒</h1>
+      <p>按摩放鬆、健身運動，讓身心充電</p>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" class="form-control" id="searchInput" placeholder="搜尋按摩會館或健身房...">
+      <select class="form-control" id="typeFilter" style="max-width:200px">
+        <option value="">全部類型</option>
+        <option value="按摩">💆 按摩會館</option>
+        <option value="健身房">💪 健身房</option>
+      </select>
+    </div>
+
+    <div class="ent-grid" id="entGrid"></div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.getCurrentUser();
+    buildTopNav('entertainment');
+
+    function renderStars(rating) {
+      const full = Math.floor(rating);
+      const half = rating % 1 >= 0.5 ? 1 : 0;
+      return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - half);
+    }
+
+    function render() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const type = document.getElementById('typeFilter').value;
+      let items = DB.getAll('entertainment');
+      if (search) items = items.filter(e => e.name.toLowerCase().includes(search) || e.description.toLowerCase().includes(search) || e.type.includes(search));
+      if (type) items = items.filter(e => e.type === type);
+
+      document.getElementById('entGrid').innerHTML = items.map(e => {
+        const typeClass = e.type === '按摩' ? 'type-massage' : 'type-gym';
+        const typeIcon = e.type === '按摩' ? '💆' : '💪';
+
+        // Split service strings into name and price
+        const serviceItems = (e.services || []).map(s => {
+          const parts = s.split(' ');
+          const price = parts.pop();
+          const name = parts.join(' ');
+          return `<div class="service-item"><span>${name}</span><span class="service-price">${price}</span></div>`;
+        }).join('');
+
+        return `
+          <div class="ent-card">
+            <div class="ent-img">
+              <img src="${e.image}" alt="${e.name}">
+              <div class="ent-type-badge ${typeClass}">${typeIcon} ${e.type}</div>
+            </div>
+            <div class="ent-body">
+              <div class="ent-header">
+                <div class="ent-name">${e.name}</div>
+                <div class="ent-rating"><span class="stars">${renderStars(e.rating)}</span> ${e.rating}</div>
+              </div>
+              <div class="ent-discount">🎉 ${e.discount}</div>
+              <div class="ent-desc">${e.description}</div>
+              <div class="ent-services">
+                <h4>服務項目 / 方案</h4>
+                ${serviceItems}
+              </div>
+              <div class="ent-features">
+                ${(e.features || []).map(f => `<span class="ent-feature">${f}</span>`).join('')}
+              </div>
+              <div class="ent-info">
+                <div>📍 ${e.address}</div>
+                <div>📞 ${e.phone}</div>
+                <div>🕐 ${e.hours}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('') || '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><p>找不到相關場所</p></div>';
+    }
+
+    document.getElementById('searchInput').addEventListener('input', render);
+    document.getElementById('typeFilter').addEventListener('change', render);
+    render();
+  </script>
+</body>
+</html>

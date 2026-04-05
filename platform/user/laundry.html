@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自助洗衣</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .machine-card.selected { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,168,76,.3); }
+    .step-indicator { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; }
+    .step { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-card2); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 700; color: var(--text-muted); }
+    .step.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,.1); }
+    .step.done { border-color: var(--success); color: var(--success); background: rgba(46,204,113,.1); }
+    .step-line { width: 40px; height: 2px; background: var(--border); align-self: center; }
+    .step-line.done { background: var(--success); }
+    .mode-card { background: var(--bg-card2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; text-align: center; transition: .2s; }
+    .mode-card:hover, .mode-card.selected { border-color: var(--gold); background: rgba(201,168,76,.08); }
+    .mode-card .mode-name { font-weight: 600; margin-bottom: 4px; }
+    .mode-card .mode-detail { font-size: .82rem; color: var(--text-muted); }
+    .mode-card .mode-price { font-size: 1.1rem; font-weight: 700; color: var(--gold); margin-top: 6px; }
+    .payment-box { background: var(--bg-card2); border-radius: var(--radius); padding: 30px; text-align: center; max-width: 400px; margin: 0 auto; }
+    .timer-display { font-size: 3rem; font-weight: 700; color: var(--gold); margin: 20px 0; font-family: 'Courier New', monospace; }
+    .progress-ring { width: 160px; height: 160px; margin: 0 auto 20px; position: relative; }
+    .progress-ring svg { transform: rotate(-90deg); }
+    .progress-ring .time-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 1.8rem; font-weight: 700; color: var(--gold); font-family: 'Courier New', monospace; }
+    .legend { display: flex; gap: 20px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--text-muted); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .legend-dot.idle { background: var(--success); }
+    .legend-dot.running { background: var(--warning); }
+    .legend-dot.done { background: var(--info); }
+  </style>
+</head>
+<body class="page-topnav">
+  <div class="main-content">
+      <div class="page-header">
+        <h1>自助洗衣</h1>
+        <p>查看機器狀態並開始洗衣</p>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot idle"></div> 可使用</div>
+        <div class="legend-item"><div class="legend-dot running"></div> 使用中</div>
+        <div class="legend-item"><div class="legend-dot done"></div> 完成</div>
+      </div>
+
+      <!-- Step 1: Select Machine -->
+      <div id="step1">
+        <div class="section-title">洗衣機</div>
+        <div class="machine-grid" id="washerGrid"></div>
+        <div class="section-title" style="margin-top:28px">烘乾機</div>
+        <div class="machine-grid" id="dryerGrid"></div>
+      </div>
+
+      <!-- Step 2: Select Mode -->
+      <div id="step2" style="display:none">
+        <div class="card">
+          <div class="step-indicator">
+            <div class="step done">1</div><div class="step-line done"></div>
+            <div class="step active">2</div><div class="step-line"></div>
+            <div class="step">3</div>
+          </div>
+          <h2 class="text-center mb-3">選擇洗衣模式</h2>
+          <p class="text-center text-muted mb-3" id="selectedMachineInfo"></p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px" id="modeGrid"></div>
+          <div class="mt-3 flex-between">
+            <button class="btn btn-secondary" onclick="goStep(1)">返回</button>
+            <button class="btn btn-primary" id="nextToPayBtn" disabled onclick="goStep(3)">下一步：付款</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Payment -->
+      <div id="step3" style="display:none">
+        <div class="card">
+          <div class="step-indicator">
+            <div class="step done">1</div><div class="step-line done"></div>
+            <div class="step done">2</div><div class="step-line done"></div>
+            <div class="step active">3</div>
+          </div>
+          <div class="payment-box">
+            <h2 style="margin-bottom:20px">付款</h2>
+            <div id="paymentSummary"></div>
+            <div class="form-group mt-3">
+              <label>付款方式</label>
+              <select class="form-control" style="max-width:250px;margin:0 auto">
+                <option>行動支付（LINE Pay）</option>
+                <option>現金（機台投幣）</option>
+                <option>IC卡</option>
+              </select>
+            </div>
+            <div class="mt-3 flex-between" style="max-width:300px;margin:20px auto 0">
+              <button class="btn btn-secondary" onclick="goStep(2)">返回</button>
+              <button class="btn btn-primary" onclick="confirmPayment()" style="padding:12px 32px">立即付款</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Running timer -->
+      <div id="step4" style="display:none">
+        <div class="card" style="text-align:center">
+          <h2 style="margin-bottom:8px">機器運轉中</h2>
+          <p class="text-muted mb-3" id="runningInfo"></p>
+          <div class="progress-ring" id="progressRing">
+            <svg width="160" height="160">
+              <circle cx="80" cy="80" r="70" fill="none" stroke="var(--bg-card2)" stroke-width="8"/>
+              <circle cx="80" cy="80" r="70" fill="none" stroke="var(--gold)" stroke-width="8"
+                      stroke-dasharray="440" stroke-dashoffset="0" stroke-linecap="round" id="progressCircle"/>
+            </svg>
+            <div class="time-text" id="timerDisplay">00:00</div>
+          </div>
+          <p class="text-muted" id="timerStatus">洗衣中...</p>
+          <button class="btn btn-secondary mt-3" onclick="goStep(1);resetTimer()">返回機器列表</button>
+        </div>
+      </div>
+    </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.getCurrentUser();
+    buildTopNav('laundry');
+
+    let selectedMachine = null;
+    let selectedMode = null;
+    let timerInterval = null;
+
+    function statusIcon(s) {
+      if (s === 'idle') return '✅';
+      if (s === 'running') return '🔄';
+      return '✔️';
+    }
+
+    function renderMachines() {
+      const machines = DB.getAll('laundryMachines');
+      const washers = machines.filter(m => m.type === 'washer');
+      const dryers = machines.filter(m => m.type === 'dryer');
+
+      const renderCard = m => {
+        let timerHtml = '';
+        if (m.status === 'running' && m.remainingMin > 0) {
+          timerHtml = `<div class="machine-timer">${m.remainingMin} 分鐘</div>`;
+        }
+        const selClass = selectedMachine && selectedMachine.id === m.id ? ' selected' : '';
+        const clickable = m.status === 'idle' ? `onclick="selectMachine('${m.id}')"` : '';
+        return `
+          <div class="machine-card ${m.status}${selClass}" ${clickable} style="${m.status!=='idle'?'opacity:.7;cursor:default':''}">
+            <div class="machine-icon">${m.type === 'washer' ? '🫧' : '🌀'}</div>
+            <div class="machine-name">${m.name}</div>
+            <div class="machine-status">${statusIcon(m.status)} ${m.status === 'idle' ? '可使用' : m.status === 'running' ? '使用中' : '完成 - 請取回'}</div>
+            ${timerHtml}
+          </div>
+        `;
+      };
+
+      document.getElementById('washerGrid').innerHTML = washers.map(renderCard).join('');
+      document.getElementById('dryerGrid').innerHTML = dryers.map(renderCard).join('');
+    }
+
+    window.selectMachine = function(id) {
+      const user = Auth.requireLogin();
+      if (!user) return;
+      const m = DB.findById('laundryMachines', id);
+      if (!m || m.status !== 'idle') return;
+      selectedMachine = m;
+      renderMachines();
+      setTimeout(() => goStep(2), 300);
+    };
+
+    window.goStep = function(step) {
+      document.getElementById('step1').style.display = step === 1 ? '' : 'none';
+      document.getElementById('step2').style.display = step === 2 ? '' : 'none';
+      document.getElementById('step3').style.display = step === 3 ? '' : 'none';
+      document.getElementById('step4').style.display = step === 4 ? '' : 'none';
+
+      if (step === 1) {
+        selectedMachine = null;
+        selectedMode = null;
+        renderMachines();
+      }
+
+      if (step === 2 && selectedMachine) {
+        const modes = DB.get('laundryModes');
+        const modeList = modes[selectedMachine.type] || [];
+        const typeLabel = selectedMachine.type === 'washer' ? '洗衣機' : '烘乾機';
+        document.getElementById('selectedMachineInfo').textContent = selectedMachine.name + '（' + typeLabel + '）';
+        document.getElementById('modeGrid').innerHTML = modeList.map((m, i) => `
+          <div class="mode-card" onclick="selectMode(${i})" id="mode_${i}">
+            <div class="mode-name">${m.name}</div>
+            <div class="mode-detail">${m.duration} 分鐘</div>
+            <div class="mode-price">NT$${m.price}</div>
+          </div>
+        `).join('');
+        selectedMode = null;
+        document.getElementById('nextToPayBtn').disabled = true;
+      }
+
+      if (step === 3 && selectedMachine && selectedMode) {
+        document.getElementById('paymentSummary').innerHTML = `
+          <div style="text-align:left;background:var(--bg-dark);padding:16px;border-radius:var(--radius)">
+            <div class="flex-between mb-2"><span>機器</span><span>${selectedMachine.name}</span></div>
+            <div class="flex-between mb-2"><span>模式</span><span>${selectedMode.name}</span></div>
+            <div class="flex-between mb-2"><span>時間</span><span>${selectedMode.duration} 分鐘</span></div>
+            <div class="flex-between" style="font-size:1.2rem;font-weight:700;padding-top:10px;border-top:1px solid var(--border)">
+              <span>合計</span><span class="text-gold">NT$${selectedMode.price}</span>
+            </div>
+          </div>
+        `;
+      }
+    };
+
+    window.selectMode = function(idx) {
+      const modes = DB.get('laundryModes');
+      const modeList = modes[selectedMachine.type] || [];
+      selectedMode = modeList[idx];
+      document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById('mode_' + idx).classList.add('selected');
+      document.getElementById('nextToPayBtn').disabled = false;
+    };
+
+    window.confirmPayment = function() {
+      if (!selectedMachine || !selectedMode) return;
+      const user = Auth.getCurrentUser();
+      DB.update('laundryMachines', selectedMachine.id, {
+        status: 'running',
+        mode: selectedMode.name,
+        price: selectedMode.price,
+        remainingMin: selectedMode.duration,
+        startedBy: user ? user.id : 'guest'
+      });
+
+      document.getElementById('runningInfo').textContent = `${selectedMachine.name} - ${selectedMode.name}`;
+      goStep(4);
+      startTimer(selectedMode.duration);
+    };
+
+    function startTimer(totalMin) {
+      let totalSec = totalMin * 3;
+      const totalDuration = totalSec;
+      const circle = document.getElementById('progressCircle');
+      const circumference = 2 * Math.PI * 70;
+
+      function update() {
+        if (totalSec <= 0) {
+          clearInterval(timerInterval);
+          document.getElementById('timerDisplay').textContent = '完成！';
+          document.getElementById('timerStatus').textContent = '您的衣物已洗好，請取回！';
+          circle.style.stroke = 'var(--success)';
+          DB.update('laundryMachines', selectedMachine.id, { status: 'done', remainingMin: 0 });
+          return;
+        }
+        totalSec--;
+        const min = Math.floor(totalSec / 60);
+        const sec = totalSec % 60;
+        document.getElementById('timerDisplay').textContent = String(min).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+        document.getElementById('timerStatus').textContent = '洗衣中...';
+      }
+
+      circle.setAttribute('stroke-dasharray', circumference);
+      circle.setAttribute('stroke-dashoffset', '0');
+      circle.style.stroke = 'var(--gold)';
+      timerInterval = setInterval(update, 1000);
+      update();
+    }
+
+    window.resetTimer = function() {
+      if (timerInterval) clearInterval(timerInterval);
+    };
+
+    renderMachines();
+  </script>
+</body>
+</html>

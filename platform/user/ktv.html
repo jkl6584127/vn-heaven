@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KTV</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .ktv-img { display: flex; align-items: center; justify-content: center; font-size: 4rem; background: linear-gradient(135deg, #2a1a3a, #1a1028); }
+    .room-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+    .room-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-dark); border-radius: 6px; font-size: .88rem; }
+    .room-price { color: var(--gold); font-weight: 700; }
+    .feature-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .feature-tag { padding: 3px 10px; background: var(--bg-dark); border-radius: 12px; font-size: .78rem; color: var(--text-muted); }
+    .stars { color: var(--gold); letter-spacing: 2px; }
+  </style>
+</head>
+<body class="page-topnav">
+  <div class="main-content">
+      <div class="page-header">
+        <h1>KTV</h1>
+        <p>尋找多語歌曲的KTV場所</p>
+      </div>
+
+      <div class="search-bar">
+        <input type="text" class="form-control" id="searchInput" placeholder="搜尋KTV...">
+      </div>
+
+      <div class="place-grid" id="ktvGrid"></div>
+    </div>
+
+  <!-- Booking Modal -->
+  <div class="modal-overlay" id="bookModal">
+    <div class="modal">
+      <div class="modal-header"><h2>預訂包廂</h2><button class="modal-close" onclick="closeBooking()">&times;</button></div>
+      <form id="bookForm">
+        <div class="form-group">
+          <label>KTV</label>
+          <input type="text" class="form-control" id="bookKtvName" disabled>
+        </div>
+        <div class="form-group">
+          <label>包廂類型</label>
+          <select class="form-control" id="bookRoom"></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>日期</label>
+            <input type="date" class="form-control" id="bookDate" required>
+          </div>
+          <div class="form-group">
+            <label>時間</label>
+            <select class="form-control" id="bookTime">
+              <option>14:00</option><option>15:00</option><option>16:00</option>
+              <option>17:00</option><option>18:00</option><option>19:00</option>
+              <option>20:00</option><option>21:00</option><option>22:00</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>時數</label>
+          <select class="form-control" id="bookDuration">
+            <option value="1">1 小時</option><option value="2" selected>2 小時</option><option value="3">3 小時</option><option value="4">4 小時</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>預估費用</label>
+          <div class="text-gold" style="font-size:1.3rem;font-weight:700" id="bookCost">NT$0</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeBooking()">取消</button>
+          <button type="submit" class="btn btn-primary">確認預訂</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div class="modal-overlay" id="successModal">
+    <div class="modal" style="text-align:center;max-width:400px">
+      <div style="font-size:4rem;margin-bottom:16px">🎤</div>
+      <h2 style="margin-bottom:10px">預訂成功！</h2>
+      <p class="text-muted mb-3" id="bookingDetails"></p>
+      <button class="btn btn-primary" onclick="document.getElementById('successModal').classList.remove('show')">關閉</button>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.getCurrentUser();
+    buildTopNav('ktv');
+
+    let selectedKtv = null;
+
+    function renderStars(rating) {
+      const full = Math.floor(rating);
+      const half = rating % 1 >= 0.5 ? 1 : 0;
+      return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - half);
+    }
+
+    function render() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      let ktvs = DB.getAll('ktvs');
+      if (search) ktvs = ktvs.filter(k => k.name.toLowerCase().includes(search));
+
+      document.getElementById('ktvGrid').innerHTML = ktvs.map(k => `
+        <div class="place-card">
+          <div class="place-img ktv-img">🎤</div>
+          <div class="place-body">
+            <div class="place-name">${k.name}</div>
+            <div class="place-rating"><span class="stars">${renderStars(k.rating)}</span> ${k.rating}/5</div>
+            <div class="place-desc" style="margin-top:10px">${k.description}</div>
+            <div class="room-list">
+              ${k.rooms.map(r => `<div class="room-item"><span>${r.type}</span><span class="room-price">NT$${r.price}/hr</span></div>`).join('')}
+            </div>
+            <div class="place-info" style="margin-top:12px">
+              <div>📍 ${k.address}</div>
+              <div>📞 ${k.phone}</div>
+              <div>🕐 ${k.hours}</div>
+            </div>
+            <div class="feature-tags">
+              ${k.features.map(f => `<span class="feature-tag">${f}</span>`).join('')}
+            </div>
+            <button class="btn btn-primary btn-block mt-2" onclick="openBooking('${k.id}')">立即預訂</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.openBooking = function(id) {
+      const user = Auth.requireLogin();
+      if (!user) return;
+      selectedKtv = DB.findById('ktvs', id);
+      if (!selectedKtv) return;
+      document.getElementById('bookKtvName').value = selectedKtv.name;
+      document.getElementById('bookRoom').innerHTML = selectedKtv.rooms.map((r,i) =>
+        `<option value="${i}">${r.type} - NT$${r.price}/hr</option>`
+      ).join('');
+      document.getElementById('bookDate').value = new Date().toISOString().split('T')[0];
+      updateCost();
+      document.getElementById('bookModal').classList.add('show');
+    };
+
+    window.closeBooking = function() {
+      document.getElementById('bookModal').classList.remove('show');
+    };
+
+    function updateCost() {
+      if (!selectedKtv) return;
+      const roomIdx = document.getElementById('bookRoom').value;
+      const duration = document.getElementById('bookDuration').value;
+      const cost = selectedKtv.rooms[roomIdx].price * duration;
+      document.getElementById('bookCost').textContent = 'NT$' + cost;
+    }
+
+    document.getElementById('bookRoom').addEventListener('change', updateCost);
+    document.getElementById('bookDuration').addEventListener('change', updateCost);
+
+    document.getElementById('bookForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const room = selectedKtv.rooms[document.getElementById('bookRoom').value];
+      const date = document.getElementById('bookDate').value;
+      const time = document.getElementById('bookTime').value;
+      const duration = document.getElementById('bookDuration').value;
+
+      document.getElementById('bookingDetails').innerHTML = `
+        ${selectedKtv.name}<br>
+        ${room.type}<br>
+        ${date} ${time}<br>
+        ${duration} 小時<br>
+        <span class="text-gold" style="font-size:1.2rem;font-weight:700">NT$${room.price * duration}</span>
+      `;
+      document.getElementById('bookModal').classList.remove('show');
+      document.getElementById('successModal').classList.add('show');
+    });
+
+    document.getElementById('searchInput').addEventListener('input', render);
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>庫存管理</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+</head>
+<body>
+  <div id="app">
+    <div class="main-content">
+      <div class="page-header">
+        <h1>庫存管理</h1>
+        <p>監控與更新庫存</p>
+      </div>
+
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <div class="search-bar">
+        <input type="text" class="form-control" id="searchInput" placeholder="搜尋商品...">
+        <select class="form-control" id="stockFilter" style="max-width:200px">
+          <option value="">全部</option>
+          <option value="low">庫存不足（≤10）</option>
+          <option value="out">缺貨</option>
+          <option value="ok">有庫存</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>商品</th><th>分類</th><th>目前庫存</th><th>已售</th><th>狀態</th><th>快速更新</th></tr></thead>
+            <tbody id="invTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.requireRole(['merchant']);
+    if (me) {
+      initSidebar('merchant', 'inventory.html');
+      const categories = DB.getAll('categories');
+
+      function render() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const filter = document.getElementById('stockFilter').value;
+        let products = DB.getAll('products').filter(p => p.merchantId === me.id);
+        if (search) products = products.filter(p => p.name.toLowerCase().includes(search));
+        if (filter === 'low') products = products.filter(p => p.stock > 0 && p.stock <= 10);
+        if (filter === 'out') products = products.filter(p => p.stock === 0);
+        if (filter === 'ok') products = products.filter(p => p.stock > 10);
+
+        const total = products.reduce((s,p) => s+p.stock, 0);
+        const outOfStock = products.filter(p=>p.stock===0).length;
+        const lowStock = products.filter(p=>p.stock>0&&p.stock<=10).length;
+
+        document.getElementById('statsGrid').innerHTML = `
+          <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value">${total}</div><div class="stat-label">總庫存</div></div>
+          <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-value">${lowStock}</div><div class="stat-label">庫存不足</div></div>
+          <div class="stat-card"><div class="stat-icon">🚫</div><div class="stat-value">${outOfStock}</div><div class="stat-label">缺貨</div></div>
+        `;
+
+        const catName = id => { const c = categories.find(c=>c.id===id); return c ? c.name : id; };
+
+        document.getElementById('invTable').innerHTML = products.map(p => {
+          let stockClass = 'text-success';
+          let stockLabel = '有庫存';
+          if (p.stock === 0) { stockClass = 'text-danger'; stockLabel = '缺貨'; }
+          else if (p.stock <= 10) { stockClass = 'text-gold'; stockLabel = '庫存不足'; }
+          return `<tr>
+            <td><strong>${p.name}</strong></td>
+            <td>${catName(p.category)}</td>
+            <td><span class="${stockClass}" style="font-weight:700">${p.stock}</span></td>
+            <td>${p.sold || 0}</td>
+            <td><span class="${stockClass}">${stockLabel}</span></td>
+            <td>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input type="number" class="form-control" style="width:80px;padding:6px 8px" value="${p.stock}" min="0" id="stock_${p.id}">
+                <button class="btn btn-sm btn-primary" onclick="updateStock('${p.id}')">更新</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('') || '<tr><td colspan="6" class="text-center text-muted" style="padding:40px">查無商品</td></tr>';
+      }
+
+      window.updateStock = function(id) {
+        const val = parseInt(document.getElementById('stock_'+id).value);
+        if (isNaN(val) || val < 0) return;
+        DB.update('products', id, { stock: val });
+        render();
+        showToast('庫存已更新');
+      };
+
+      document.getElementById('searchInput').addEventListener('input', render);
+      document.getElementById('stockFilter').addEventListener('change', render);
+      render();
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+      document.body.appendChild(t); setTimeout(()=>t.remove(),2500);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商品詳情</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .product-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+    .product-detail .detail-img { height: 350px; background: var(--bg-card2); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 6rem; }
+    .detail-info .detail-name { font-size: 1.6rem; font-weight: 700; margin-bottom: 10px; }
+    .detail-info .detail-price { font-size: 2rem; color: var(--gold); font-weight: 700; margin-bottom: 16px; }
+    .detail-info .detail-meta { color: var(--text-muted); font-size: .9rem; margin-bottom: 8px; }
+    .detail-info .detail-desc { color: var(--text-muted); line-height: 1.7; margin: 20px 0; padding: 16px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .qty-control { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .qty-control button { width: 36px; height: 36px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-card2); color: var(--text); font-size: 1.2rem; cursor: pointer; }
+    .qty-control button:hover { border-color: var(--gold); color: var(--gold); }
+    .qty-control span { font-size: 1.2rem; font-weight: 600; min-width: 30px; text-align: center; }
+    @media (max-width: 768px) { .product-detail { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="page-topnav">
+  <div class="main-content">
+      <div style="margin-bottom:20px">
+        <a href="index.html" style="color:var(--text-muted)">&larr; 返回購物</a>
+      </div>
+      <div id="productDetail"></div>
+    </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.getCurrentUser();
+    buildTopNav('home');
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const product = DB.findById('products', id);
+    const categories = DB.getAll('categories');
+    const merchants = DB.getAll('users');
+
+    if (!product) {
+      document.getElementById('productDetail').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><p>找不到商品</p></div>';
+    } else {
+      const cat = categories.find(c => c.id === product.category);
+      const merchant = merchants.find(u => u.id === product.merchantId);
+      let qty = 1;
+
+      document.getElementById('productDetail').innerHTML = `
+        <div class="product-detail">
+          <div class="detail-img">${product.image ? `<img src="${product.image}" alt="${product.name}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--radius)">` : (cat ? cat.icon : '📦')}</div>
+          <div class="detail-info">
+            <div class="detail-name">${product.name}</div>
+            <div class="detail-price">NT$${product.price}</div>
+            <div class="detail-meta">${cat ? cat.icon + ' ' + cat.name : ''}</div>
+            <div class="detail-meta">賣家：${merchant ? merchant.shopName || merchant.name : '未知'}</div>
+            <div class="detail-meta">已售 ${product.sold || 0} 件 | ${product.stock > 0 ? '庫存 ' + product.stock + ' 件' : '<span class="text-danger">缺貨</span>'}</div>
+            <div class="detail-desc">${product.description}</div>
+            <div class="qty-control">
+              <span style="color:var(--text-muted)">數量：</span>
+              <button onclick="changeQty(-1)">-</button>
+              <span id="qtyDisplay">1</span>
+              <button onclick="changeQty(1)">+</button>
+            </div>
+            <button class="btn btn-primary" style="padding:14px 40px;font-size:1rem" onclick="addToCart()" ${product.stock===0?'disabled':''}>
+              ${product.stock===0?'已售完':'加入購物車'}
+            </button>
+          </div>
+        </div>
+      `;
+
+      window.changeQty = function(d) {
+        qty = Math.max(1, Math.min(qty + d, product.stock));
+        document.getElementById('qtyDisplay').textContent = qty;
+      };
+
+      window.addToCart = function() {
+        const user = Auth.requireLogin();
+        if (!user) return;
+        const cart = DB.getCart(user.id);
+        const existing = cart.find(c => c.productId === product.id);
+        if (existing) {
+          existing.qty += qty;
+        } else {
+          cart.push({ productId: product.id, qty });
+        }
+        DB.setCart(user.id, cart);
+        showToast(`已將 ${qty} 件商品加入購物車！`);
+      };
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+      document.body.appendChild(t); setTimeout(()=>t.remove(),2500);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>訂單管理</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+</head>
+<body>
+  <div id="app">
+    <div class="main-content">
+      <div class="page-header">
+        <h1>訂單管理</h1>
+        <p>所有平台訂單</p>
+      </div>
+
+      <div class="filter-tabs" id="filterTabs">
+        <button class="filter-tab active" data-status="">全部</button>
+        <button class="filter-tab" data-status="pending">待處理</button>
+        <button class="filter-tab" data-status="processing">處理中</button>
+        <button class="filter-tab" data-status="shipped">已出貨</button>
+        <button class="filter-tab" data-status="completed">已完成</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>訂單編號</th><th>客戶</th><th>商品</th><th>合計</th><th>狀態</th><th>日期</th><th>操作</th></tr></thead>
+            <tbody id="orderTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Detail Modal -->
+  <div class="modal-overlay" id="orderModal">
+    <div class="modal">
+      <div class="modal-header"><h2>訂單詳情</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+      <div id="orderDetail"></div>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.requireRole(['admin']);
+    if (me) {
+      initSidebar('admin', 'orders.html');
+      let currentFilter = '';
+
+      const statusLabels = {pending:'待處理',processing:'處理中',shipped:'已出貨',completed:'已完成',cancelled:'已取消'};
+      const statusBadge = s => {
+        const m = {pending:'warning',processing:'info',shipped:'gold',completed:'success',cancelled:'danger'};
+        return `<span class="badge badge-${m[s]||'info'}">${statusLabels[s]||s}</span>`;
+      };
+
+      function render() {
+        const orders = DB.getAll('orders');
+        const users = DB.getAll('users');
+        const filtered = currentFilter ? orders.filter(o => o.status === currentFilter) : orders;
+
+        document.getElementById('orderTable').innerHTML = filtered.map(o => {
+          const cu = users.find(u => u.id === o.userId);
+          return `<tr>
+            <td><strong>${o.id}</strong></td>
+            <td>${cu ? cu.name : 'N/A'}</td>
+            <td>${o.items.length} 件商品</td>
+            <td class="text-gold">NT$${o.total}</td>
+            <td>${statusBadge(o.status)}</td>
+            <td>${o.createdAt}</td>
+            <td><button class="btn btn-sm btn-secondary" onclick="viewOrder('${o.id}')">查看</button></td>
+          </tr>`;
+        }).join('') || '<tr><td colspan="7" class="text-center text-muted" style="padding:40px">查無訂單</td></tr>';
+      }
+
+      // Filter tabs
+      document.getElementById('filterTabs').addEventListener('click', function(e) {
+        if (e.target.classList.contains('filter-tab')) {
+          document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+          e.target.classList.add('active');
+          currentFilter = e.target.dataset.status;
+          render();
+        }
+      });
+
+      window.viewOrder = function(id) {
+        const o = DB.findById('orders', id);
+        const users = DB.getAll('users');
+        const cu = users.find(u => u.id === o.userId);
+        document.getElementById('orderDetail').innerHTML = `
+          <p><strong>訂單編號：</strong> ${o.id}</p>
+          <p><strong>客戶：</strong> ${cu ? cu.name : 'N/A'}</p>
+          <p><strong>地址：</strong> ${o.address}</p>
+          <p><strong>日期：</strong> ${o.createdAt}</p>
+          <p><strong>狀態：</strong> ${statusBadge(o.status)}</p>
+          <hr style="border-color:var(--border);margin:14px 0">
+          <h3 style="margin-bottom:10px;font-size:.95rem">商品</h3>
+          <table><thead><tr><th>商品</th><th>數量</th><th>單價</th></tr></thead><tbody>
+          ${o.items.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>NT$${i.price}</td></tr>`).join('')}
+          </tbody></table>
+          <p class="mt-2" style="font-size:1.1rem"><strong>合計：<span class="text-gold">NT$${o.total}</span></strong></p>
+          <div class="modal-footer">
+            <select class="form-control" style="max-width:180px" id="statusSelect">
+              <option value="pending" ${o.status==='pending'?'selected':''}>待處理</option>
+              <option value="processing" ${o.status==='processing'?'selected':''}>處理中</option>
+              <option value="shipped" ${o.status==='shipped'?'selected':''}>已出貨</option>
+              <option value="completed" ${o.status==='completed'?'selected':''}>已完成</option>
+              <option value="cancelled" ${o.status==='cancelled'?'selected':''}>已取消</option>
+            </select>
+            <button class="btn btn-primary" onclick="updateStatus('${o.id}')">更新狀態</button>
+          </div>
+        `;
+        document.getElementById('orderModal').classList.add('show');
+      };
+
+      window.updateStatus = function(id) {
+        const status = document.getElementById('statusSelect').value;
+        DB.update('orders', id, { status });
+        closeModal();
+        render();
+        showToast('訂單狀態已更新');
+      };
+
+      window.closeModal = function() {
+        document.getElementById('orderModal').classList.remove('show');
+      };
+
+      render();
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2500);
+    }
+  </script>
+</body>
+</html>

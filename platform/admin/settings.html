@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系統設定</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+</head>
+<body>
+  <div id="app">
+    <div class="main-content">
+      <div class="page-header">
+        <h1>系統設定</h1>
+        <p>平台設定</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>一般設定</h2></div>
+        <form id="settingsForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>平台名稱</label>
+              <input type="text" class="form-control" id="platformName" value="MigrantLife">
+            </div>
+            <div class="form-group">
+              <label>客服信箱</label>
+              <input type="email" class="form-control" id="supportEmail" value="support@migrantlife.com">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>幣別</label>
+              <select class="form-control" id="currency">
+                <option selected>NT$ (TWD)</option>
+                <option>$ (USD)</option>
+                <option>PHP (Peso)</option>
+                <option>VND (Dong)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>預設語言</label>
+              <select class="form-control" id="language">
+                <option>繁體中文</option>
+                <option>English</option>
+                <option>Tieng Viet</option>
+                <option>Bahasa Indonesia</option>
+                <option>Filipino</option>
+                <option>ไทย</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>維護模式</label>
+            <select class="form-control" id="maintenance" style="max-width:200px">
+              <option value="off">關閉</option>
+              <option value="on">開啟</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">儲存設定</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>運費設定</h2></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>免運門檻（NT$）</label>
+            <input type="number" class="form-control" id="freeShipping" value="500">
+          </div>
+          <div class="form-group">
+            <label>固定運費（NT$）</label>
+            <input type="number" class="form-control" id="shippingRate" value="60">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="showToast('運費設定已儲存')">儲存</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>危險區域</h2></div>
+        <p class="text-muted mb-2">此操作將重置所有資料為預設值，且無法復原。</p>
+        <button class="btn btn-danger" onclick="if(confirm('確定要重置嗎？此操作無法復原。')){localStorage.clear();location.reload();}">重置資料庫</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.requireRole(['admin']);
+    if (me) {
+      initSidebar('admin', 'settings.html');
+
+      // Load saved settings
+      const settings = DB.get('settings') || {};
+      if (settings.platformName) document.getElementById('platformName').value = settings.platformName;
+      if (settings.supportEmail) document.getElementById('supportEmail').value = settings.supportEmail;
+
+      document.getElementById('settingsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        DB.set('settings', {
+          platformName: document.getElementById('platformName').value,
+          supportEmail: document.getElementById('supportEmail').value,
+          currency: document.getElementById('currency').value,
+          language: document.getElementById('language').value,
+          maintenance: document.getElementById('maintenance').value,
+        });
+        showToast('設定已儲存');
+      });
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2500);
+    }
+  </script>
+</body>
+</html>

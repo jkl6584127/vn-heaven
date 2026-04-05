@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的訂單</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .order-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; }
+    .order-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--bg-card2); flex-wrap: wrap; gap: 8px; }
+    .order-body { padding: 16px 20px; }
+    .order-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .order-item:last-child { border: none; }
+    .order-footer { display: flex; justify-content: flex-end; align-items: center; gap: 16px; padding: 12px 20px; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body class="page-topnav">
+  <div class="main-content">
+      <div class="page-header">
+        <h1>我的訂單</h1>
+        <p>追蹤您的訂單紀錄</p>
+      </div>
+
+      <div id="guestPrompt" style="display:none">
+        <div class="guest-prompt">
+          <div class="guest-icon">📦</div>
+          <h2>請先登入</h2>
+          <p>登入後即可查看您的訂單紀錄</p>
+          <button class="btn btn-primary" onclick="showLoginModal()">登入</button>
+        </div>
+      </div>
+
+      <div id="orderContent">
+        <div class="filter-tabs" id="filterTabs">
+          <button class="filter-tab active" data-status="">全部</button>
+          <button class="filter-tab" data-status="pending">待處理</button>
+          <button class="filter-tab" data-status="processing">處理中</button>
+          <button class="filter-tab" data-status="shipped">已出貨</button>
+          <button class="filter-tab" data-status="completed">已完成</button>
+        </div>
+        <div id="orderList"></div>
+      </div>
+    </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.getCurrentUser();
+    buildTopNav('home');
+
+    const statusLabel = { pending: '待處理', processing: '處理中', shipped: '已出貨', completed: '已完成', cancelled: '已取消' };
+
+    if (!me) {
+      document.getElementById('guestPrompt').style.display = '';
+      document.getElementById('orderContent').style.display = 'none';
+    } else {
+      let currentFilter = '';
+
+      const sb = s => {
+        const m = {pending:'warning',processing:'info',shipped:'gold',completed:'success',cancelled:'danger'};
+        return `<span class="badge badge-${m[s]||'info'}">${statusLabel[s] || s}</span>`;
+      };
+
+      function render() {
+        let orders = DB.getAll('orders').filter(o => o.userId === me.id);
+        if (currentFilter) orders = orders.filter(o => o.status === currentFilter);
+        orders.sort((a,b) => b.createdAt.localeCompare(a.createdAt));
+
+        const merchants = DB.getAll('users');
+
+        if (orders.length === 0) {
+          document.getElementById('orderList').innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div><p>查無訂單</p><a href="index.html" class="btn btn-primary mt-2">開始購物</a></div>';
+          return;
+        }
+
+        document.getElementById('orderList').innerHTML = orders.map(o => {
+          const merchant = merchants.find(u => u.id === o.merchantId);
+          return `
+            <div class="order-card">
+              <div class="order-header">
+                <div><strong>${o.id}</strong> <span class="text-muted" style="margin-left:8px">${o.createdAt}</span></div>
+                <div>${sb(o.status)}</div>
+              </div>
+              <div class="order-body">
+                <div class="text-muted mb-2" style="font-size:.85rem">賣家：${merchant ? merchant.shopName || merchant.name : '未知'}</div>
+                ${o.items.map(i => `
+                  <div class="order-item">
+                    <div>${i.name} <span class="text-muted">x${i.qty}</span></div>
+                    <div class="text-gold">NT$${i.price * i.qty}</div>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="order-footer">
+                <span class="text-muted">合計：</span>
+                <span class="text-gold" style="font-size:1.2rem;font-weight:700">NT$${o.total}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('filterTabs').addEventListener('click', function(e) {
+        if (e.target.classList.contains('filter-tab')) {
+          document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+          e.target.classList.add('active');
+          currentFilter = e.target.dataset.status;
+          render();
+        }
+      });
+
+      render();
+    }
+  </script>
+</body>
+</html>

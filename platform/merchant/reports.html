@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>營收報表</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+</head>
+<body>
+  <div id="app">
+    <div class="main-content">
+      <div class="page-header">
+        <h1>營收報表</h1>
+        <p>銷售分析與營收明細</p>
+      </div>
+
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <div class="card">
+        <div class="card-header"><h2>月營收</h2></div>
+        <div class="chart-bar-container" id="monthlyChart"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><h2>熱銷商品</h2></div>
+          <div id="topProducts"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>訂單狀態分佈</h2></div>
+          <div id="statusBreakdown"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>全部訂單營收</h2></div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>訂單編號</th><th>商品</th><th>營收</th><th>狀態</th><th>日期</th></tr></thead>
+            <tbody id="revenueTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.requireRole(['merchant']);
+    if (me) {
+      initSidebar('merchant', 'reports.html');
+
+      const orders = DB.getAll('orders').filter(o => o.merchantId === me.id);
+      const products = DB.getAll('products').filter(p => p.merchantId === me.id);
+
+      const totalRevenue = orders.reduce((s,o) => s+o.total, 0);
+      const completedRevenue = orders.filter(o=>o.status==='completed').reduce((s,o) => s+o.total, 0);
+      const avgOrder = orders.length ? Math.round(totalRevenue / orders.length) : 0;
+      const totalSold = products.reduce((s,p) => s+(p.sold||0), 0);
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">NT$${totalRevenue.toLocaleString()}</div><div class="stat-label">總營收</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">NT$${completedRevenue.toLocaleString()}</div><div class="stat-label">已確認營收</div></div>
+        <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-value">NT$${avgOrder}</div><div class="stat-label">平均訂單金額</div></div>
+        <div class="stat-card"><div class="stat-icon">🛍️</div><div class="stat-value">${totalSold}</div><div class="stat-label">已售出數量</div></div>
+      `;
+
+      // Monthly chart
+      const months = ['1月','2月','3月','4月','5月','6月'];
+      const vals = [800, 1200, 1800, totalRevenue, 0, 0];
+      const mx = Math.max(...vals, 1);
+      document.getElementById('monthlyChart').innerHTML = vals.map((v,i) =>
+        `<div class="chart-bar" style="height:${Math.max((v/mx)*180,4)}px"><span class="bar-value">${v}</span><span class="bar-label">${months[i]}</span></div>`
+      ).join('');
+
+      // Top products
+      const sorted = [...products].sort((a,b) => (b.sold||0)-(a.sold||0)).slice(0,5);
+      document.getElementById('topProducts').innerHTML = sorted.map((p,i) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div><span class="text-gold" style="font-weight:700;margin-right:10px">#${i+1}</span>${p.name}</div>
+          <div><span class="text-gold">${p.sold||0}</span> 件</div>
+        </div>
+      `).join('') || '<div class="text-center text-muted" style="padding:20px">尚無訂單</div>';
+
+      // Status breakdown
+      const statusMap = {pending:'待處理',processing:'處理中',shipped:'已出貨',completed:'已完成',cancelled:'已取消'};
+      const statuses = ['pending','processing','shipped','completed'];
+      const colors = {pending:'var(--warning)',processing:'var(--info)',shipped:'var(--gold)',completed:'var(--success)'};
+      document.getElementById('statusBreakdown').innerHTML = statuses.map(s => {
+        const count = orders.filter(o=>o.status===s).length;
+        const pct = orders.length ? Math.round(count/orders.length*100) : 0;
+        return `<div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${statusMap[s]}</span><span>${count} 筆訂單 (${pct}%)</span></div>
+          <div style="height:8px;background:var(--bg-dark);border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${colors[s]};border-radius:4px"></div></div>
+        </div>`;
+      }).join('');
+
+      // Revenue table
+      const statusBadge = s => {
+        const m = {completed:'success',pending:'warning',processing:'info',shipped:'gold',cancelled:'danger'};
+        return `<span class="badge badge-${m[s]||'warning'}">${statusMap[s]||s}</span>`;
+      };
+      document.getElementById('revenueTable').innerHTML = orders.map(o => `
+        <tr><td>${o.id}</td><td>${o.items.map(i=>i.name).join(', ')}</td><td class="text-gold">NT$${o.total}</td><td>${statusBadge(o.status)}</td><td>${o.createdAt}</td></tr>
+      `).join('') || '<tr><td colspan="5" class="text-center text-muted" style="padding:30px">尚無訂單</td></tr>';
+    }
+  </script>
+</body>
+</html>

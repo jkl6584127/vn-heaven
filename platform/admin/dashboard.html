@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理員儀表板</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+</head>
+<body>
+  <div id="app">
+    <div class="main-content">
+      <div class="page-header">
+        <h1>儀表板</h1>
+        <p>系統概覽與數據分析</p>
+      </div>
+
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>營收（近7個月）</h2>
+        </div>
+        <div class="chart-bar-container" id="revenueChart"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>最近訂單</h2>
+          <a href="orders.html" class="btn btn-secondary btn-sm">查看全部</a>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>訂單編號</th><th>客戶</th><th>合計</th><th>狀態</th><th>日期</th></tr></thead>
+            <tbody id="recentOrders"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const user = Auth.requireRole(['admin']);
+    if (user) {
+      initSidebar('admin', 'dashboard.html');
+
+      const users = DB.getAll('users');
+      const orders = DB.getAll('orders');
+      const products = DB.getAll('products');
+      const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">${users.length}</div><div class="stat-label">總用戶數</div></div>
+        <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value">${orders.length}</div><div class="stat-label">總訂單數</div></div>
+        <div class="stat-card"><div class="stat-icon">🏪</div><div class="stat-value">${users.filter(u=>u.role==='merchant').length}</div><div class="stat-label">商家數</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">NT$${totalRevenue.toLocaleString()}</div><div class="stat-label">總營收</div></div>
+      `;
+
+      // Chart
+      const months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr'];
+      const values = [1200,1800,2400,1900,2800,2332,totalRevenue];
+      const max = Math.max(...values);
+      document.getElementById('revenueChart').innerHTML = values.map((v,i) =>
+        `<div class="chart-bar" style="height:${(v/max)*180}px"><span class="bar-value">${v}</span><span class="bar-label">${months[i]}</span></div>`
+      ).join('');
+
+      // Recent orders
+      const statusLabels = {pending:'待處理',processing:'處理中',shipped:'已出貨',completed:'已完成',cancelled:'已取消'};
+      const statusBadge = s => {
+        const m = {pending:'warning',processing:'info',shipped:'gold',completed:'success',cancelled:'danger'};
+        return `<span class="badge badge-${m[s]||'info'}">${statusLabels[s]||s}</span>`;
+      };
+      const findUser = id => users.find(u=>u.id===id);
+      document.getElementById('recentOrders').innerHTML = orders.slice(-5).reverse().map(o => {
+        const cu = findUser(o.userId);
+        return `<tr><td>${o.id}</td><td>${cu?cu.name:'N/A'}</td><td>NT$${o.total}</td><td>${statusBadge(o.status)}</td><td>${o.createdAt}</td></tr>`;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

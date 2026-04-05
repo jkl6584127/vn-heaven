@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商家管理</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+</head>
+<body>
+  <div id="app">
+    <div class="main-content">
+      <div class="page-header">
+        <h1>商家管理</h1>
+        <p>管理商家帳號</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">🏪</div><div class="stat-value" id="totalMerchants">0</div><div class="stat-label">總商家數</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="activeMerchants">0</div><div class="stat-label">營運中商家</div></div>
+        <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" id="totalProducts">0</div><div class="stat-label">總商品數</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>商家列表</h2></div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>店舖名稱</th><th>負責人</th><th>電子信箱</th><th>商品數</th><th>訂單數</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody id="merchantTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.requireRole(['admin']);
+    if (me) {
+      initSidebar('admin', 'merchants.html');
+
+      const statusLabels = {active:'營運中',suspended:'已停用'};
+
+      function render() {
+        const users = DB.getAll('users').filter(u => u.role === 'merchant');
+        const products = DB.getAll('products');
+        const orders = DB.getAll('orders');
+
+        document.getElementById('totalMerchants').textContent = users.length;
+        document.getElementById('activeMerchants').textContent = users.filter(u => u.status === 'active').length;
+        document.getElementById('totalProducts').textContent = products.length;
+
+        document.getElementById('merchantTable').innerHTML = users.length ? users.map(u => {
+          const pCount = products.filter(p => p.merchantId === u.id).length;
+          const oCount = orders.filter(o => o.merchantId === u.id).length;
+          return `<tr>
+            <td><strong>${u.shopName || 'N/A'}</strong></td>
+            <td>${u.name}</td>
+            <td>${u.email}</td>
+            <td>${pCount}</td>
+            <td>${oCount}</td>
+            <td><span class="badge badge-${u.status==='active'?'success':'danger'}">${statusLabels[u.status]||u.status}</span></td>
+            <td>
+              <button class="btn btn-sm ${u.status==='active'?'btn-danger':'btn-success'}" onclick="toggle('${u.id}')">${u.status==='active'?'停用':'啟用'}</button>
+            </td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="7" class="text-center text-muted" style="padding:40px">查無商家</td></tr>';
+      }
+
+      window.toggle = function(id) {
+        const u = DB.findById('users', id);
+        DB.update('users', id, { status: u.status === 'active' ? 'suspended' : 'active' });
+        render();
+      };
+
+      render();
+    }
+  </script>
+</body>
+</html>

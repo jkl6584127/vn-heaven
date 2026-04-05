@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商家儀表板</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+</head>
+<body>
+  <div id="app">
+    <div class="main-content">
+      <div class="page-header">
+        <h1>商家儀表板</h1>
+        <p id="shopGreeting"></p>
+      </div>
+
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <div class="card">
+        <div class="card-header"><h2>營收（近7天）</h2></div>
+        <div class="chart-bar-container" id="chart"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>最近訂單</h2>
+          <a href="orders.html" class="btn btn-secondary btn-sm">查看全部</a>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>訂單編號</th><th>商品</th><th>合計</th><th>狀態</th><th>日期</th></tr></thead>
+            <tbody id="recentOrders"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.requireRole(['merchant']);
+    if (me) {
+      initSidebar('merchant', 'dashboard.html');
+      document.getElementById('shopGreeting').textContent = `歡迎回來，${me.shopName || me.name}`;
+
+      const orders = DB.getAll('orders').filter(o => o.merchantId === me.id);
+      const products = DB.getAll('products').filter(p => p.merchantId === me.id);
+      const revenue = orders.filter(o => o.status === 'completed').reduce((s, o) => s + o.total, 0);
+      const pending = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value">${orders.length}</div><div class="stat-label">總訂單</div></div>
+        <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value">${pending}</div><div class="stat-label">待處理</div></div>
+        <div class="stat-card"><div class="stat-icon">🛍️</div><div class="stat-value">${products.length}</div><div class="stat-label">商品數</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">NT$${revenue.toLocaleString()}</div><div class="stat-label">營收</div></div>
+      `;
+
+      // Chart
+      const days = ['一','二','三','四','五','六','日'];
+      const vals = [320,480,210,560,390,720,revenue||450];
+      const mx = Math.max(...vals);
+      document.getElementById('chart').innerHTML = vals.map((v,i) =>
+        `<div class="chart-bar" style="height:${(v/mx)*180}px"><span class="bar-value">${v}</span><span class="bar-label">${days[i]}</span></div>`
+      ).join('');
+
+      // Recent orders
+      const statusMap = {pending:'待處理',processing:'處理中',shipped:'已出貨',completed:'已完成',cancelled:'已取消'};
+      const sb = s => {
+        const m = {pending:'warning',processing:'info',shipped:'gold',completed:'success'};
+        return `<span class="badge badge-${m[s]||'info'}">${statusMap[s]||s}</span>`;
+      };
+      document.getElementById('recentOrders').innerHTML = orders.slice(-5).reverse().map(o =>
+        `<tr><td>${o.id}</td><td>${o.items.map(i=>i.name).join(', ')}</td><td class="text-gold">NT$${o.total}</td><td>${sb(o.status)}</td><td>${o.createdAt}</td></tr>`
+      ).join('') || '<tr><td colspan="5" class="text-center text-muted" style="padding:30px">尚無訂單</td></tr>';
+    }
+  </script>
+</body>
+</html>

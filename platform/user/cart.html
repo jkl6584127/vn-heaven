@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>購物車</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .cart-item { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .cart-item .item-img { width: 70px; height: 70px; background: var(--bg-card2); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0; }
+    .cart-item .item-info { flex: 1; }
+    .cart-item .item-name { font-weight: 600; margin-bottom: 4px; }
+    .cart-item .item-price { color: var(--gold); font-weight: 600; }
+    .cart-item .item-qty { display: flex; align-items: center; gap: 8px; }
+    .cart-item .item-qty button { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card2); color: var(--text); cursor: pointer; font-size: 1rem; }
+    .cart-item .item-qty button:hover { border-color: var(--gold); }
+    .cart-item .item-subtotal { min-width: 100px; text-align: right; font-weight: 700; color: var(--gold); font-size: 1.05rem; }
+    .cart-summary { background: var(--bg-card2); border-radius: var(--radius); padding: 24px; margin-top: 20px; }
+    .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .summary-total { font-size: 1.3rem; font-weight: 700; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+    @media (max-width: 600px) { .cart-item { flex-wrap: wrap; } .cart-item .item-subtotal { width: 100%; text-align: left; } }
+  </style>
+</head>
+<body class="page-topnav">
+  <div class="main-content">
+      <div class="page-header">
+        <h1>購物車</h1>
+        <p id="cartCount"></p>
+      </div>
+
+      <div id="guestPrompt" style="display:none">
+        <div class="guest-prompt">
+          <div class="guest-icon">🛒</div>
+          <h2>請先登入</h2>
+          <p>登入後即可查看您的購物車</p>
+          <button class="btn btn-primary" onclick="showLoginModal()">登入</button>
+        </div>
+      </div>
+
+      <div id="cartContent">
+        <div class="card">
+          <div id="cartItems"></div>
+        </div>
+        <div id="cartSummary"></div>
+      </div>
+    </div>
+
+  <!-- Checkout Modal -->
+  <div class="modal-overlay" id="checkoutModal">
+    <div class="modal">
+      <div class="modal-header"><h2>結帳</h2><button class="modal-close" onclick="document.getElementById('checkoutModal').classList.remove('show')">&times;</button></div>
+      <form id="checkoutForm">
+        <div class="form-group">
+          <label>收貨地址 *</label>
+          <textarea class="form-control" id="address" rows="2" required placeholder="請輸入收貨地址"></textarea>
+        </div>
+        <div class="form-group">
+          <label>付款方式</label>
+          <select class="form-control" id="paymentMethod">
+            <option>貨到付款</option>
+            <option>銀行轉帳</option>
+            <option>行動支付</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>備註（選填）</label>
+          <input type="text" class="form-control" id="notes" placeholder="有特殊需求嗎？">
+        </div>
+        <div id="checkoutSummary" class="mb-2"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('checkoutModal').classList.remove('show')">取消</button>
+          <button type="submit" class="btn btn-primary">下單</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="modal-overlay" id="successModal">
+    <div class="modal" style="text-align:center;max-width:400px">
+      <div style="font-size:4rem;margin-bottom:16px">🎉</div>
+      <h2 style="margin-bottom:10px">訂單已成立！</h2>
+      <p class="text-muted mb-3">您的訂單已成功建立。</p>
+      <p class="text-gold mb-3" style="font-size:1.1rem" id="newOrderId"></p>
+      <button class="btn btn-primary" onclick="location.href='orders.html'">查看我的訂單</button>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.getCurrentUser();
+    buildTopNav('home');
+
+    if (!me) {
+      document.getElementById('guestPrompt').style.display = '';
+      document.getElementById('cartContent').style.display = 'none';
+    } else {
+      const categories = DB.getAll('categories');
+      const catIcon = id => { const c = categories.find(c=>c.id===id); return c ? c.icon : '📦'; };
+
+      function render() {
+        const cart = DB.getCart(me.id);
+        const products = DB.getAll('products');
+
+        if (cart.length === 0) {
+          document.getElementById('cartCount').textContent = '0 件商品';
+          document.getElementById('cartItems').innerHTML = '<div class="empty-state"><div class="empty-icon">🛒</div><p>購物車是空的</p><a href="index.html" class="btn btn-primary mt-2">瀏覽商品</a></div>';
+          document.getElementById('cartSummary').innerHTML = '';
+          return;
+        }
+
+        document.getElementById('cartCount').textContent = cart.reduce((s,c) => s+c.qty, 0) + ' 件商品';
+
+        let html = '';
+        let subtotal = 0;
+        cart.forEach(item => {
+          const p = products.find(pr => pr.id === item.productId);
+          if (!p) return;
+          const itemTotal = p.price * item.qty;
+          subtotal += itemTotal;
+          html += `
+            <div class="cart-item">
+              <div class="item-img">${catIcon(p.category)}</div>
+              <div class="item-info">
+                <div class="item-name">${p.name}</div>
+                <div class="item-price">NT$${p.price}</div>
+              </div>
+              <div class="item-qty">
+                <button onclick="updateQty('${p.id}',-1)">-</button>
+                <span>${item.qty}</span>
+                <button onclick="updateQty('${p.id}',1)">+</button>
+              </div>
+              <div class="item-subtotal">NT$${itemTotal}</div>
+              <button class="btn btn-sm btn-danger" onclick="removeItem('${p.id}')">移除</button>
+            </div>
+          `;
+        });
+
+        document.getElementById('cartItems').innerHTML = html;
+
+        const shipping = subtotal >= 500 ? 0 : 60;
+        document.getElementById('cartSummary').innerHTML = `
+          <div class="cart-summary">
+            <div class="summary-row"><span>小計</span><span>NT$${subtotal}</span></div>
+            <div class="summary-row"><span>運費</span><span>${shipping === 0 ? '<span class="text-success">免運</span>' : 'NT$'+shipping}</span></div>
+            ${subtotal < 500 ? '<div class="summary-row text-muted" style="font-size:.82rem"><span>訂單滿NT$500免運費</span><span></span></div>' : ''}
+            <div class="summary-row summary-total"><span>合計</span><span class="text-gold">NT$${subtotal + shipping}</span></div>
+            <button class="btn btn-primary btn-block mt-2" style="padding:14px;font-size:1rem" onclick="openCheckout()">前往結帳</button>
+          </div>
+        `;
+      }
+
+      window.updateQty = function(productId, delta) {
+        const cart = DB.getCart(me.id);
+        const item = cart.find(c => c.productId === productId);
+        if (item) {
+          item.qty = Math.max(1, item.qty + delta);
+          DB.setCart(me.id, cart);
+          render();
+        }
+      };
+
+      window.removeItem = function(productId) {
+        const cart = DB.getCart(me.id).filter(c => c.productId !== productId);
+        DB.setCart(me.id, cart);
+        render();
+        showToast('商品已移除');
+      };
+
+      window.openCheckout = function() {
+        const cart = DB.getCart(me.id);
+        const products = DB.getAll('products');
+        let total = 0;
+        cart.forEach(c => { const p = products.find(pr=>pr.id===c.productId); if(p) total += p.price*c.qty; });
+        const shipping = total >= 500 ? 0 : 60;
+        document.getElementById('checkoutSummary').innerHTML = `
+          <div style="background:var(--bg-dark);padding:14px;border-radius:var(--radius)">
+            <div class="summary-row"><span>商品數</span><span>${cart.reduce((s,c)=>s+c.qty,0)}</span></div>
+            <div class="summary-row"><span>小計</span><span>NT$${total}</span></div>
+            <div class="summary-row"><span>運費</span><span>${shipping===0?'免運':'NT$'+shipping}</span></div>
+            <div class="summary-row" style="font-weight:700;font-size:1.1rem"><span>合計</span><span class="text-gold">NT$${total+shipping}</span></div>
+          </div>
+        `;
+        document.getElementById('checkoutModal').classList.add('show');
+      };
+
+      document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const cart = DB.getCart(me.id);
+        const products = DB.getAll('products');
+        const address = document.getElementById('address').value;
+
+        const byMerchant = {};
+        cart.forEach(c => {
+          const p = products.find(pr => pr.id === c.productId);
+          if (!p) return;
+          if (!byMerchant[p.merchantId]) byMerchant[p.merchantId] = [];
+          byMerchant[p.merchantId].push({ productId: p.id, name: p.name, qty: c.qty, price: p.price });
+        });
+
+        let lastOrderId = '';
+        Object.keys(byMerchant).forEach(merchantId => {
+          const items = byMerchant[merchantId];
+          const total = items.reduce((s,i) => s + i.price * i.qty, 0);
+          const order = {
+            id: 'ord' + DB.genId(),
+            userId: me.id,
+            merchantId: merchantId,
+            items: items,
+            total: total,
+            status: 'pending',
+            createdAt: new Date().toISOString().split('T')[0],
+            address: address,
+          };
+          DB.add('orders', order);
+          lastOrderId = order.id;
+
+          items.forEach(i => {
+            const p = DB.findById('products', i.productId);
+            if (p) DB.update('products', i.productId, { stock: Math.max(0, p.stock - i.qty), sold: (p.sold||0) + i.qty });
+          });
+        });
+
+        DB.setCart(me.id, []);
+        document.getElementById('checkoutModal').classList.remove('show');
+        document.getElementById('newOrderId').textContent = '訂單編號：' + lastOrderId;
+        document.getElementById('successModal').classList.add('show');
+      });
+
+      render();
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+      document.body.appendChild(t); setTimeout(()=>t.remove(),2500);
+    }
+  </script>
+</body>
+</html>

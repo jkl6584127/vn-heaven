@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VN Heaven - 消費滿額抽獎活動</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #C9A84C;
+      --gold-light: #e0c76a;
+      --dark: #0f1117;
+      --card: #1a1d27;
+      --card2: #22263a;
+      --text: #e8e8e8;
+      --muted: #8a8fa0;
+      --border: #2a2e3f;
+      --success: #2ecc71;
+      --danger: #e74c3c;
+    }
+    body { font-family: 'Noto Sans TC', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; }
+    .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+    /* Header */
+    .event-header {
+      text-align: center;
+      padding: 60px 24px 40px;
+      background: linear-gradient(135deg, #1a1d27, #0f1117);
+      border-bottom: 1px solid var(--border);
+    }
+    .event-badge { display: inline-block; background: rgba(201,168,76,.15); color: var(--gold); padding: 6px 20px; border-radius: 50px; font-size: .8rem; font-weight: 600; letter-spacing: 2px; margin-bottom: 16px; }
+    .event-header h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; margin-bottom: 12px; }
+    .event-header h1 span { background: linear-gradient(135deg, var(--gold), var(--gold-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .event-header p { color: var(--muted); font-size: 1.05rem; max-width: 600px; margin: 0 auto; }
+
+    /* Timer */
+    .countdown { display: flex; justify-content: center; gap: 16px; margin: 32px 0; }
+    .cd-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; min-width: 80px; text-align: center; }
+    .cd-num { font-size: 2rem; font-weight: 800; color: var(--gold); }
+    .cd-label { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+
+    /* Content */
+    .section { padding: 40px 0; }
+    .section h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .section h2 span { color: var(--gold); }
+
+    /* Rules */
+    .rules { list-style: none; counter-reset: rule; }
+    .rules li { counter-increment: rule; padding: 16px 20px 16px 60px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; position: relative; font-size: .95rem; line-height: 1.6; }
+    .rules li::before { content: counter(rule); position: absolute; left: 16px; top: 16px; width: 32px; height: 32px; background: var(--gold); color: var(--dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .9rem; }
+
+    /* Prize grid */
+    .prize-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+    .prize-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: .2s; }
+    .prize-card:hover { border-color: var(--gold); transform: translateY(-3px); }
+    .prize-img { height: 180px; overflow: hidden; }
+    .prize-img img { width: 100%; height: 100%; object-fit: cover; }
+    .prize-body { padding: 18px; }
+    .prize-rank { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: .78rem; font-weight: 700; margin-bottom: 8px; }
+    .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: #333; }
+    .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: #333; }
+    .rank-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); color: #fff; }
+    .rank-4 { background: rgba(201,168,76,.15); color: var(--gold); }
+    .prize-name { font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; }
+    .prize-value { color: var(--gold); font-weight: 600; font-size: .9rem; }
+    .prize-qty { color: var(--muted); font-size: .82rem; margin-top: 4px; }
+
+    /* Thresholds */
+    .threshold-table { width: 100%; border-collapse: collapse; }
+    .threshold-table th, .threshold-table td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--border); }
+    .threshold-table th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+    .threshold-table tr:hover { background: rgba(201,168,76,.04); }
+    .threshold-table .amount { color: var(--gold); font-weight: 700; font-size: 1.1rem; }
+    .threshold-table .chances { font-weight: 600; }
+
+    /* CTA */
+    .cta-section { text-align: center; padding: 48px 24px; background: linear-gradient(135deg, rgba(201,168,76,.08), transparent); border-radius: 16px; margin: 32px 0; border: 1px solid rgba(201,168,76,.2); }
+    .cta-section h2 { font-size: 1.5rem; margin-bottom: 12px; }
+    .cta-section p { color: var(--muted); margin-bottom: 24px; }
+    .cta-btn { display: inline-block; padding: 16px 48px; background: var(--gold); color: var(--dark); border-radius: 50px; font-weight: 700; font-size: 1.1rem; text-decoration: none; transition: .2s; border: none; cursor: pointer; font-family: inherit; }
+    .cta-btn:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,.3); }
+
+    /* Footer */
+    .event-footer { text-align: center; padding: 24px; border-top: 1px solid var(--border); margin-top: 40px; }
+    .event-footer p { color: var(--muted); font-size: .82rem; }
+    .event-footer a { color: var(--gold); text-decoration: none; }
+
+    /* Note */
+    .note-box { background: var(--card2); border-radius: 10px; padding: 20px; font-size: .88rem; color: var(--muted); line-height: 1.7; }
+    .note-box strong { color: var(--gold); }
+
+    @media (max-width: 600px) {
+      .countdown { gap: 8px; }
+      .cd-item { min-width: 60px; padding: 12px; }
+      .cd-num { font-size: 1.5rem; }
+      .prize-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="event-header">
+    <div class="event-badge">限時活動</div>
+    <h1>消費滿額 <span>幸運大抽獎</span></h1>
+    <p>在VN Heaven購物消費滿指定金額，即可獲得抽獎機會，大獎等你帶回家！</p>
+    <div class="countdown">
+      <div class="cd-item"><div class="cd-num" id="cdDays">00</div><div class="cd-label">天</div></div>
+      <div class="cd-item"><div class="cd-num" id="cdHours">00</div><div class="cd-label">時</div></div>
+      <div class="cd-item"><div class="cd-num" id="cdMins">00</div><div class="cd-label">分</div></div>
+      <div class="cd-item"><div class="cd-num" id="cdSecs">00</div><div class="cd-label">秒</div></div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Prizes -->
+    <div class="section">
+      <h2>🏆 <span>獎項內容</span></h2>
+      <div class="prize-grid">
+        <div class="prize-card">
+          <div class="prize-img"><img src="https://images.unsplash.com/photo-1585060544812-6b45742d762f?w=400&q=80" alt="iPhone"></div>
+          <div class="prize-body">
+            <div class="prize-rank rank-1">🥇 頭獎</div>
+            <div class="prize-name">iPhone 16 Pro 256GB</div>
+            <div class="prize-value">市值 NT$38,900</div>
+            <div class="prize-qty">名額：1 名</div>
+          </div>
+        </div>
+        <div class="prize-card">
+          <div class="prize-img"><img src="https://images.unsplash.com/photo-1546868871-af0de0ae72be?w=400&q=80" alt="AirPods"></div>
+          <div class="prize-body">
+            <div class="prize-rank rank-2">🥈 二獎</div>
+            <div class="prize-name">AirPods Pro 2</div>
+            <div class="prize-value">市值 NT$7,490</div>
+            <div class="prize-qty">名額：3 名</div>
+          </div>
+        </div>
+        <div class="prize-card">
+          <div class="prize-img"><img src="https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=400&q=80" alt="禮券"></div>
+          <div class="prize-body">
+            <div class="prize-rank rank-3">🥉 三獎</div>
+            <div class="prize-name">平台購物金 NT$1,000</div>
+            <div class="prize-value">市值 NT$1,000</div>
+            <div class="prize-qty">名額：10 名</div>
+          </div>
+        </div>
+        <div class="prize-card">
+          <div class="prize-img"><img src="https://images.unsplash.com/photo-1607082349566-187342175e2f?w=400&q=80" alt="生活用品"></div>
+          <div class="prize-body">
+            <div class="prize-rank rank-4">🎁 參加獎</div>
+            <div class="prize-name">精美生活用品禮包</div>
+            <div class="prize-value">市值 NT$200</div>
+            <div class="prize-qty">名額：50 名</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thresholds -->
+    <div class="section">
+      <h2>💰 <span>消費門檻與抽獎次數</span></h2>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <table class="threshold-table">
+          <thead><tr><th>消費金額</th><th>抽獎次數</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td class="amount">NT$300</td><td class="chances">1 次</td><td>單筆消費滿 NT$300</td></tr>
+            <tr><td class="amount">NT$600</td><td class="chances">3 次</td><td>單筆消費滿 NT$600，加碼 2 次</td></tr>
+            <tr><td class="amount">NT$1,000</td><td class="chances">5 次</td><td>單筆消費滿 NT$1,000，加碼 4 次</td></tr>
+            <tr><td class="amount">NT$2,000</td><td class="chances">12 次</td><td>單筆消費滿 NT$2,000，加碼 11 次</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Rules -->
+    <div class="section">
+      <h2>📋 <span>活動規則</span></h2>
+      <ol class="rules">
+        <li>活動期間：<strong>2025/05/01 - 2025/06/30</strong>，為期兩個月。</li>
+        <li>凡在「VN Heaven」平台<strong>單筆消費滿 NT$300 以上</strong>，即可獲得抽獎資格。</li>
+        <li>消費金額越高，抽獎次數越多，<strong>最高可獲得 12 次抽獎機會</strong>。</li>
+        <li>抽獎資格自消費完成後<strong>自動累計</strong>，無需額外登記。</li>
+        <li>開獎日期為 <strong>2025/07/05</strong>，將以平台公告及簡訊方式通知中獎者。</li>
+        <li>中獎者須於開獎後 <strong>14 個工作天內</strong>完成領獎手續，逾期視為放棄。</li>
+        <li>每位會員<strong>不限中獎次數</strong>，但同一獎項最多中獎一次。</li>
+        <li>本活動不得與其他優惠或促銷併用，主辦方保留活動最終解釋權。</li>
+      </ol>
+    </div>
+
+    <!-- Notes -->
+    <div class="section">
+      <h2>⚠️ <span>注意事項</span></h2>
+      <div class="note-box">
+        <strong>1.</strong> 退貨或取消訂單將同時取消對應之抽獎資格。<br>
+        <strong>2.</strong> 中獎獎品以實物為準，不得折換現金。<br>
+        <strong>3.</strong> 頭獎及二獎中獎者需依中華民國稅法規定繳納相關稅金。<br>
+        <strong>4.</strong> 如有任何爭議，以主辦方最終決定為準。<br>
+        <strong>5.</strong> 活動內容如有變更，將於平台首頁公告，不另行通知。
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-section">
+      <h2>立即購物，贏取大獎！</h2>
+      <p>活動期間消費越多，中獎機會越大</p>
+      <a href="index.html" class="cta-btn">前往購物商城</a>
+    </div>
+
+  </div>
+
+  <div class="event-footer">
+    <p><a href="index.html">← 返回VN Heaven首頁</a></p>
+    <p style="margin-top:8px">&copy; 2025 VN Heaven. All rights reserved.</p>
+  </div>
+
+  <script>
+    // Countdown to 2025/07/05
+    function updateCountdown() {
+      const target = new Date('2025-07-05T00:00:00+08:00').getTime();
+      const now = Date.now();
+      const diff = Math.max(0, target - now);
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      document.getElementById('cdDays').textContent = String(d).padStart(2, '0');
+      document.getElementById('cdHours').textContent = String(h).padStart(2, '0');
+      document.getElementById('cdMins').textContent = String(m).padStart(2, '0');
+      document.getElementById('cdSecs').textContent = String(s).padStart(2, '0');
+    }
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+  </script>
+</body>
+</html>

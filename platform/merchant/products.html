@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商品管理</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+</head>
+<body>
+  <div id="app">
+    <div class="main-content">
+      <div class="page-header flex-between">
+        <div>
+          <h1>商品管理</h1>
+          <p>管理您的商店商品</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal()">+ 新增商品</button>
+      </div>
+
+      <div class="search-bar">
+        <input type="text" class="form-control" id="searchInput" placeholder="搜尋商品...">
+        <select class="form-control" id="catFilter" style="max-width:200px">
+          <option value="">所有分類</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>商品</th><th>分類</th><th>價格</th><th>庫存</th><th>已售</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody id="productTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Product Modal -->
+  <div class="modal-overlay" id="productModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">新增商品</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <form id="productForm">
+        <input type="hidden" id="productId">
+        <div class="form-group">
+          <label>商品名稱 *</label>
+          <input type="text" class="form-control" id="pName" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>分類 *</label>
+            <select class="form-control" id="pCategory" required></select>
+          </div>
+          <div class="form-group">
+            <label>價格（NT$）*</label>
+            <input type="number" class="form-control" id="pPrice" min="0" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>庫存 *</label>
+            <input type="number" class="form-control" id="pStock" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>狀態</label>
+            <select class="form-control" id="pStatus">
+              <option value="active">上架</option>
+              <option value="inactive">下架</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>描述</label>
+          <textarea class="form-control" id="pDesc" rows="3"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+          <button type="submit" class="btn btn-primary">儲存商品</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header"><h2>確認刪除</h2><button class="modal-close" onclick="document.getElementById('deleteModal').classList.remove('show')">&times;</button></div>
+      <p>確定要刪除此商品嗎？此操作無法復原。</p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="document.getElementById('deleteModal').classList.remove('show')">取消</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn">刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.requireRole(['merchant']);
+    if (me) {
+      initSidebar('merchant', 'products.html');
+
+      const categories = DB.getAll('categories');
+      // Populate category selects
+      const catOptions = categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+      document.getElementById('pCategory').innerHTML = catOptions;
+      document.getElementById('catFilter').innerHTML = '<option value="">所有分類</option>' + catOptions;
+
+      function render() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const cat = document.getElementById('catFilter').value;
+        let products = DB.getAll('products').filter(p => p.merchantId === me.id);
+        if (search) products = products.filter(p => p.name.toLowerCase().includes(search));
+        if (cat) products = products.filter(p => p.category === cat);
+
+        const catName = id => { const c = categories.find(c => c.id === id); return c ? c.icon + ' ' + c.name : id; };
+        const statusLabel = s => s === 'active' ? '上架' : '下架';
+
+        document.getElementById('productTable').innerHTML = products.map(p => `
+          <tr>
+            <td><strong>${p.name}</strong></td>
+            <td>${catName(p.category)}</td>
+            <td class="text-gold">NT$${p.price}</td>
+            <td>${p.stock === 0 ? '<span class="text-danger">缺貨</span>' : p.stock}</td>
+            <td>${p.sold || 0}</td>
+            <td><span class="badge badge-${p.status==='active'?'success':'danger'}">${statusLabel(p.status)}</span></td>
+            <td>
+              <button class="btn btn-sm btn-secondary" onclick="editProduct('${p.id}')">編輯</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')">刪除</button>
+            </td>
+          </tr>
+        `).join('') || '<tr><td colspan="7" class="text-center text-muted" style="padding:40px">目前無商品，點擊「新增商品」開始。</td></tr>';
+      }
+
+      window.openModal = function(product) {
+        document.getElementById('modalTitle').textContent = product ? '編輯商品' : '新增商品';
+        document.getElementById('productId').value = product ? product.id : '';
+        document.getElementById('pName').value = product ? product.name : '';
+        document.getElementById('pCategory').value = product ? product.category : categories[0]?.id || '';
+        document.getElementById('pPrice').value = product ? product.price : '';
+        document.getElementById('pStock').value = product ? product.stock : '';
+        document.getElementById('pStatus').value = product ? product.status : 'active';
+        document.getElementById('pDesc').value = product ? product.description : '';
+        document.getElementById('productModal').classList.add('show');
+      };
+
+      window.closeModal = function() {
+        document.getElementById('productModal').classList.remove('show');
+      };
+
+      window.editProduct = function(id) {
+        const p = DB.findById('products', id);
+        if (p) openModal(p);
+      };
+
+      let deleteId = null;
+      window.deleteProduct = function(id) {
+        deleteId = id;
+        document.getElementById('deleteModal').classList.add('show');
+      };
+      document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (deleteId) {
+          DB.remove('products', deleteId);
+          deleteId = null;
+          document.getElementById('deleteModal').classList.remove('show');
+          render();
+          showToast('商品已刪除');
+        }
+      });
+
+      document.getElementById('productForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('productId').value;
+        const data = {
+          name: document.getElementById('pName').value,
+          category: document.getElementById('pCategory').value,
+          price: parseInt(document.getElementById('pPrice').value),
+          stock: parseInt(document.getElementById('pStock').value),
+          status: document.getElementById('pStatus').value,
+          description: document.getElementById('pDesc').value,
+          merchantId: me.id,
+        };
+
+        if (id) {
+          DB.update('products', id, data);
+          showToast('商品已更新');
+        } else {
+          data.sold = 0;
+          data.image = '';
+          data.createdAt = new Date().toISOString().split('T')[0];
+          DB.add('products', data);
+          showToast('商品已新增');
+        }
+        closeModal();
+        render();
+      });
+
+      document.getElementById('searchInput').addEventListener('input', render);
+      document.getElementById('catFilter').addEventListener('change', render);
+      render();
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+      document.body.appendChild(t); setTimeout(() => t.remove(), 2500);
+    }
+  </script>
+</body>
+</html>

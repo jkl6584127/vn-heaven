@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>合作餐廳</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .cuisine-img { display: flex; align-items: center; justify-content: center; font-size: 4rem; }
+    .cuisine-img.越南料理 { background: linear-gradient(135deg, #2d4a22, #1a2e15); }
+    .cuisine-img.菲律賓料理 { background: linear-gradient(135deg, #4a2222, #2e1515); }
+    .cuisine-img.泰國料理 { background: linear-gradient(135deg, #4a3f22, #2e2715); }
+    .cuisine-img.印尼料理 { background: linear-gradient(135deg, #224a4a, #152e2e); }
+    .cuisine-img.台灣料理 { background: linear-gradient(135deg, #3a224a, #22152e); }
+    .cuisine-img.印度料理 { background: linear-gradient(135deg, #4a3522, #2e2015); }
+    .discount-banner { background: linear-gradient(90deg, rgba(201,168,76,.2), rgba(201,168,76,.05)); border-left: 3px solid var(--gold); padding: 10px 14px; border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 12px; font-weight: 600; color: var(--gold); font-size: .9rem; }
+    .stars { color: var(--gold); letter-spacing: 2px; }
+  </style>
+</head>
+<body class="page-topnav">
+  <div class="main-content">
+      <div class="page-header">
+        <h1>合作餐廳</h1>
+        <p>移工專屬優惠</p>
+      </div>
+
+      <div class="search-bar">
+        <input type="text" class="form-control" id="searchInput" placeholder="搜尋餐廳...">
+        <select class="form-control" id="cuisineFilter" style="max-width:200px">
+          <option value="">所有料理</option>
+          <option value="越南料理">越南料理</option>
+          <option value="菲律賓料理">菲律賓料理</option>
+          <option value="泰國料理">泰國料理</option>
+          <option value="印尼料理">印尼料理</option>
+          <option value="台灣料理">台灣料理</option>
+          <option value="印度料理">印度料理</option>
+        </select>
+      </div>
+
+      <div class="place-grid" id="restaurantGrid"></div>
+    </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const me = Auth.getCurrentUser();
+    buildTopNav('restaurants');
+
+    const cuisineEmoji = {
+      '越南料理': '🍜', '菲律賓料理': '🍛', '泰國料理': '🥘', '印尼料理': '🍢', '台灣料理': '🍱', '印度料理': '🍲'
+    };
+
+    function renderStars(rating) {
+      const full = Math.floor(rating);
+      const half = rating % 1 >= 0.5 ? 1 : 0;
+      return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - half);
+    }
+
+    function render() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const cuisine = document.getElementById('cuisineFilter').value;
+      let restaurants = DB.getAll('restaurants');
+      if (search) restaurants = restaurants.filter(r => r.name.toLowerCase().includes(search) || r.cuisine.toLowerCase().includes(search));
+      if (cuisine) restaurants = restaurants.filter(r => r.cuisine === cuisine);
+
+      document.getElementById('restaurantGrid').innerHTML = restaurants.map(r => `
+        <div class="place-card">
+          <div class="place-img cuisine-img ${r.cuisine}">${cuisineEmoji[r.cuisine] || '🍽️'}</div>
+          <div class="place-body">
+            <div class="place-name">${r.name}</div>
+            <div class="place-badge">${r.cuisine}</div>
+            <div class="discount-banner">🎉 ${r.discount}</div>
+            <div class="place-desc">${r.description}</div>
+            <div class="place-info">
+              <div class="place-rating"><span class="stars">${renderStars(r.rating)}</span> ${r.rating}/5</div>
+              <div>📍 ${r.address}</div>
+              <div>📞 ${r.phone}</div>
+              <div>🕐 ${r.hours}</div>
+            </div>
+          </div>
+        </div>
+      `).join('') || '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><p>找不到餐廳</p></div>';
+    }
+
+    document.getElementById('searchInput').addEventListener('input', render);
+    document.getElementById('cuisineFilter').addEventListener('change', render);
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VN Heaven - 登入</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-box">
+      <h1>VN Heaven</h1>
+      <p class="subtitle">移工生活服務平台</p>
+      <div class="login-error" id="loginError"></div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>帳號</label>
+          <input type="text" class="form-control" id="username" placeholder="請輸入帳號" required>
+        </div>
+        <div class="form-group">
+          <label>密碼</label>
+          <input type="password" class="form-control" id="password" placeholder="請輸入密碼" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="padding:12px;font-size:1rem;">登入</button>
+      </form>
+      <div class="login-hint">
+        <strong>測試帳號：</strong><br>
+        管理員：admin / admin123<br>
+        商家：merchant / merchant123<br>
+        用戶：user / user123
+      </div>
+    </div>
+  </div>
+
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const cur = Auth.getCurrentUser();
+    if (cur) window.location.href = Auth.getRedirectUrl(cur.role);
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const result = Auth.login(username, password);
+      const errEl = document.getElementById('loginError');
+      if (!result) {
+        errEl.textContent = '帳號或密碼錯誤。';
+        errEl.style.display = 'block';
+      } else if (result.error) {
+        errEl.textContent = result.error;
+        errEl.style.display = 'block';
+      } else {
+        window.location.href = Auth.getRedirectUrl(result.role);
+      }
+    });
+  </script>
+</body>
+</html>

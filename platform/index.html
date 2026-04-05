@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VN Heaven - 首頁</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    /* ---- Carousel ---- */
+    .carousel { position: relative; width: 100%; height: 420px; overflow: hidden; }
+    .carousel-track { display: flex; height: 100%; transition: transform .6s ease; }
+    .carousel-slide { min-width: 100%; height: 100%; position: relative; flex-shrink: 0; }
+    .carousel-slide img { width: 100%; height: 100%; object-fit: cover; }
+    .carousel-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10,10,10,.75) 0%, rgba(10,10,10,.3) 60%, transparent 100%); display: flex; align-items: center; padding: 0 60px; }
+    .carousel-text { max-width: 500px; }
+    .carousel-text .slide-badge { display: inline-block; padding: 4px 14px; background: rgba(201,168,76,.2); color: var(--gold); border-radius: 20px; font-size: .78rem; font-weight: 600; margin-bottom: 12px; }
+    .carousel-text h2 { font-size: clamp(1.4rem, 3.5vw, 2.2rem); font-weight: 800; line-height: 1.3; margin-bottom: 10px; }
+    .carousel-text p { color: #ccc; font-size: .95rem; margin-bottom: 18px; line-height: 1.5; }
+    .carousel-text .slide-btn { display: inline-block; padding: 10px 28px; background: var(--gold); color: var(--bg-dark); border-radius: 8px; font-weight: 600; font-size: .9rem; text-decoration: none; transition: .2s; }
+    .carousel-text .slide-btn:hover { background: var(--gold-light); transform: translateY(-1px); }
+    .carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; background: rgba(0,0,0,.5); color: #fff; border: none; border-radius: 50%; font-size: 1.2rem; cursor: pointer; z-index: 10; transition: .2s; display: flex; align-items: center; justify-content: center; }
+    .carousel-arrow:hover { background: rgba(201,168,76,.6); }
+    .carousel-arrow.prev { left: 16px; }
+    .carousel-arrow.next { right: 16px; }
+    .carousel-dots { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10; }
+    .carousel-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.4); border: none; cursor: pointer; transition: .2s; padding: 0; }
+    .carousel-dot.active { background: var(--gold); width: 28px; border-radius: 5px; }
+    @media (max-width: 768px) {
+      .carousel { height: 200px; }
+      .carousel-overlay { padding: 0 16px; }
+      .carousel-text .slide-badge { font-size: .68rem; padding: 3px 10px; margin-bottom: 6px; }
+      .carousel-text h2 { font-size: 1rem; margin-bottom: 4px; }
+      .carousel-text p { font-size: .75rem; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .carousel-text .slide-btn { padding: 7px 18px; font-size: .78rem; }
+      .carousel-arrow { width: 30px; height: 30px; font-size: .85rem; }
+      .carousel-dots { bottom: 8px; }
+      .carousel-dot { width: 8px; height: 8px; }
+      .carousel-dot.active { width: 20px; }
+    }
+
+    /* ---- Page sections ---- */
+    .hp-section { max-width: 1280px; margin: 0 auto; padding: 40px 24px; }
+    .hp-section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .hp-section-head h2 { font-size: 1.4rem; font-weight: 700; }
+    .hp-section-head a { color: var(--gold); font-size: .88rem; text-decoration: none; }
+    .hp-section-head a:hover { color: var(--gold-light); }
+    .hp-divider { max-width: 1280px; margin: 0 auto; border: none; border-top: 1px solid var(--border); }
+
+    /* Lottery banner */
+    .lottery-banner { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+    .lottery-inner { display: flex; align-items: center; gap: 32px; background: linear-gradient(135deg, rgba(201,168,76,.1), rgba(201,168,76,.02)); border: 1px solid rgba(201,168,76,.25); border-radius: 16px; padding: 28px 36px; cursor: pointer; transition: .2s; }
+    .lottery-inner:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,168,76,.15); }
+    .lottery-icon { font-size: 3rem; flex-shrink: 0; }
+    .lottery-info { flex: 1; }
+    .lottery-info h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+    .lottery-info h3 span { color: var(--gold); }
+    .lottery-info p { color: var(--text-muted); font-size: .9rem; }
+    .lottery-btn { padding: 10px 28px; background: var(--gold); color: var(--bg-dark); border: none; border-radius: 8px; font-weight: 700; font-size: .9rem; cursor: pointer; font-family: inherit; white-space: nowrap; transition: .2s; flex-shrink: 0; }
+    .lottery-btn:hover { background: var(--gold-light); }
+    @media (max-width: 600px) {
+      .lottery-inner { flex-direction: column; text-align: center; padding: 24px; gap: 16px; }
+    }
+  </style>
+</head>
+<body class="page-topnav">
+
+  <!-- Carousel Banner -->
+  <div class="carousel" id="carousel">
+    <div class="carousel-track" id="carouselTrack">
+      <!-- Slide 1: Food / Restaurant -->
+      <div class="carousel-slide">
+        <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&q=80" alt="美食">
+        <div class="carousel-overlay">
+          <div class="carousel-text">
+            <div class="slide-badge">合作餐廳</div>
+            <h2>道地家鄉味<br>移工專屬餐廳優惠</h2>
+            <p>越南、菲律賓、泰國、印尼料理一應俱全，享受最高 8 折的移工專屬折扣！</p>
+            <a href="user/restaurants.html" class="slide-btn">探索合作餐廳 →</a>
+          </div>
+        </div>
+      </div>
+      <!-- Slide 2: Shopping -->
+      <div class="carousel-slide">
+        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&q=80" alt="購物">
+        <div class="carousel-overlay">
+          <div class="carousel-text">
+            <div class="slide-badge">購物商城</div>
+            <h2>日常生活用品<br>一站式線上購物</h2>
+            <p>泡麵、SIM卡、行動電源、衣物用品⋯⋯ 超值價格，送貨到宿舍！</p>
+            <a href="user/index.html" class="slide-btn">前往購物 →</a>
+          </div>
+        </div>
+      </div>
+      <!-- Slide 3: Lottery -->
+      <div class="carousel-slide">
+        <img src="https://images.unsplash.com/photo-1513151233558-d860c5398176?w=1400&q=80" alt="抽獎">
+        <div class="carousel-overlay">
+          <div class="carousel-text">
+            <div class="slide-badge">🎉 限時活動</div>
+            <h2>消費滿額<br>幸運大抽獎！</h2>
+            <p>消費滿 NT$300 即可參加抽獎，頭獎 iPhone 16 Pro 等你帶回家！</p>
+            <a href="lottery.html" class="slide-btn">查看活動詳情 →</a>
+          </div>
+        </div>
+      </div>
+      <!-- Slide 4: KTV -->
+      <div class="carousel-slide">
+        <img src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1400&q=80" alt="KTV">
+        <div class="carousel-overlay">
+          <div class="carousel-text">
+            <div class="slide-badge">KTV 娛樂</div>
+            <h2>多語歌曲 KTV<br>放假就是要歡唱</h2>
+            <p>越南語、泰語、菲律賓語歌曲齊全，包廂 NT$120 起！</p>
+            <a href="user/ktv.html" class="slide-btn">立即預訂 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="carousel-arrow prev" onclick="moveSlide(-1)">&#10094;</button>
+    <button class="carousel-arrow next" onclick="moveSlide(1)">&#10095;</button>
+    <div class="carousel-dots" id="carouselDots"></div>
+  </div>
+
+  <!-- Lottery Banner -->
+  <div class="lottery-banner" style="margin-top:24px">
+    <div class="lottery-inner" onclick="location.href='lottery.html'">
+      <div class="lottery-icon">🎰</div>
+      <div class="lottery-info">
+        <h3>🎉 消費滿額 <span>幸運大抽獎</span> — 頭獎 iPhone 16 Pro！</h3>
+        <p>活動期間 2025/05/01 - 06/30，單筆消費滿 NT$300 即可參加，消費越多機會越大</p>
+      </div>
+      <button class="lottery-btn" onclick="event.stopPropagation();location.href='lottery.html'">查看詳情</button>
+    </div>
+  </div>
+
+  <!-- Categories -->
+  <div class="hp-section" style="padding-bottom:0">
+    <div class="hp-section-head"><h2>商品分類</h2></div>
+    <div class="category-bar" id="categoryBar"></div>
+  </div>
+
+  <!-- Products -->
+  <div class="hp-section" id="products">
+    <div class="hp-section-head">
+      <h2>熱門商品</h2>
+      <a href="user/index.html">查看全部 →</a>
+    </div>
+    <div class="feature-grid" id="productGrid"></div>
+  </div>
+
+  <hr class="hp-divider">
+
+  <!-- Restaurants -->
+  <div class="hp-section">
+    <div class="hp-section-head">
+      <h2>🍽️ 合作餐廳</h2>
+      <a href="user/restaurants.html">查看全部 →</a>
+    </div>
+    <div class="service-grid" id="restaurantGrid"></div>
+  </div>
+
+  <hr class="hp-divider">
+
+  <!-- KTV -->
+  <div class="hp-section">
+    <div class="hp-section-head">
+      <h2>🎤 KTV 娛樂</h2>
+      <a href="user/ktv.html">查看全部 →</a>
+    </div>
+    <div class="service-grid" id="ktvGrid"></div>
+  </div>
+
+  <hr class="hp-divider">
+
+  <!-- Entertainment -->
+  <div class="hp-section">
+    <div class="hp-section-head">
+      <h2>💆 娛樂休閒</h2>
+      <a href="user/entertainment.html">查看全部 →</a>
+    </div>
+    <div class="service-grid" id="entGrid"></div>
+  </div>
+
+  <hr class="hp-divider">
+
+  <!-- Laundry -->
+  <div class="hp-section">
+    <div class="hp-section-head">
+      <h2>🧺 自助洗衣</h2>
+      <a href="user/laundry.html">查看洗衣機狀態 →</a>
+    </div>
+    <div class="feature-grid" id="laundryGrid"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer style="background:var(--bg-card);border-top:1px solid var(--border);margin-top:40px;padding:32px 24px;">
+    <div style="max-width:1280px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="margin-bottom:4px;display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,#FFD700,#C9A84C,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px;font-style:italic;">VN</span>
+          <span style="font-size:1rem;font-weight:300;color:var(--text);letter-spacing:3px;text-transform:uppercase;">Heaven</span>
+        </div>
+        <div style="font-size:.82rem;color:var(--text-muted);">Migrant Life Platform &copy; 2025</div>
+      </div>
+      <div style="display:flex;gap:24px;font-size:.88rem;">
+        <a href="user/restaurants.html" style="color:var(--text-muted);text-decoration:none;">合作餐廳</a>
+        <a href="user/ktv.html" style="color:var(--text-muted);text-decoration:none;">KTV</a>
+        <a href="user/laundry.html" style="color:var(--text-muted);text-decoration:none;">自助洗衣</a>
+        <a href="lottery.html" style="color:var(--gold);text-decoration:none;">🎰 抽獎活動</a>
+        <a href="login.html" style="color:var(--text-muted);text-decoration:none;">管理後台</a>
+        <a href="project-plan.html" style="color:var(--text-muted);text-decoration:none;">📋 流程圖</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    buildTopNav('home');
+
+    // ---- Carousel ----
+    const track = document.getElementById('carouselTrack');
+    const slides = track.querySelectorAll('.carousel-slide');
+    const dotsContainer = document.getElementById('carouselDots');
+    let currentSlide = 0;
+    let autoplayTimer;
+
+    // Create dots
+    slides.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+      dot.onclick = () => goToSlide(i);
+      dotsContainer.appendChild(dot);
+    });
+
+    function goToSlide(n) {
+      currentSlide = ((n % slides.length) + slides.length) % slides.length;
+      track.style.transform = `translateX(-${currentSlide * 100}%)`;
+      document.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+      resetAutoplay();
+    }
+
+    window.moveSlide = function(dir) { goToSlide(currentSlide + dir); };
+
+    function resetAutoplay() {
+      clearInterval(autoplayTimer);
+      autoplayTimer = setInterval(() => goToSlide(currentSlide + 1), 5000);
+    }
+    resetAutoplay();
+
+    // Navbar scroll
+    window.addEventListener('scroll', () => {
+      document.getElementById('topnav').classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    // ---- Render Data ----
+    const categories = DB.getAll('categories');
+    const products = DB.getAll('products').filter(p => p.status === 'active');
+    const restaurants = DB.getAll('restaurants');
+    const ktvs = DB.getAll('ktvs');
+    const machines = DB.getAll('laundryMachines');
+
+    // Categories
+    document.getElementById('categoryBar').innerHTML =
+      '<a class="category-chip active" data-cat="" href="#products"><span class="chip-icon">🔥</span>全部</a>' +
+      categories.map(c => `<a class="category-chip" data-cat="${c.id}" href="#products"><span class="chip-icon">${c.icon}</span>${c.name}</a>`).join('');
+
+    let selectedCat = '';
+    document.getElementById('categoryBar').addEventListener('click', function(e) {
+      const chip = e.target.closest('.category-chip');
+      if (!chip) return;
+      e.preventDefault();
+      document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      selectedCat = chip.dataset.cat;
+      renderProducts();
+    });
+
+    // Products
+    function renderProducts() {
+      let items = products.slice();
+      if (selectedCat) items = items.filter(p => p.category === selectedCat);
+      items.sort((a, b) => (b.sold || 0) - (a.sold || 0));
+
+      const catName = id => { const c = categories.find(c => c.id === id); return c ? c.name : ''; };
+
+      document.getElementById('productGrid').innerHTML = items.map(p => `
+        <div class="feature-card" style="cursor:pointer" onclick="location.href='user/product.html?id=${p.id}'">
+          <div class="fc-img" style="background:var(--bg-card2);overflow:hidden">
+            ${p.image ? `<img src="${p.image}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover">` : '📦'}
+          </div>
+          <div class="fc-body">
+            <div class="fc-badge">${catName(p.category)}</div>
+            <div class="fc-title">${p.name}</div>
+            <div class="fc-price">NT$${p.price}</div>
+            <div class="fc-meta">${p.stock > 0 ? '已售 ' + (p.sold || 0) + ' 件' : '<span class="text-danger">缺貨</span>'}</div>
+            <button class="fc-btn" onclick="event.stopPropagation();addToCart('${p.id}')" ${p.stock === 0 ? 'disabled' : ''}>
+              ${p.stock === 0 ? '已售完' : '加入購物車'}
+            </button>
+          </div>
+        </div>
+      `).join('') || '<div class="empty-state" style="grid-column:1/-1"><p>此分類暫無商品</p></div>';
+    }
+    renderProducts();
+
+    window.addToCart = function(productId) {
+      const user = Auth.requireLogin();
+      if (!user) return;
+      const cart = DB.getCart(user.id);
+      const existing = cart.find(c => c.productId === productId);
+      if (existing) existing.qty++;
+      else cart.push({ productId, qty: 1 });
+      DB.setCart(user.id, cart);
+      showToast('已加入購物車！');
+    };
+
+    // Restaurants
+    const cuisineEmoji = { '越南料理':'🍜','菲律賓料理':'🍛','泰國料理':'🥘','印尼料理':'🍢','台灣料理':'🍱','印度料理':'🍲' };
+    document.getElementById('restaurantGrid').innerHTML = restaurants.map(r => `
+      <div class="service-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <span style="font-size:2rem">${cuisineEmoji[r.cuisine] || '🍽️'}</span>
+          <div>
+            <div class="sc-name">${r.name}</div>
+            <div class="sc-badge">${r.cuisine} ⭐ ${r.rating}</div>
+          </div>
+        </div>
+        <div class="sc-discount">🎉 ${r.discount}</div>
+        <div class="sc-desc">${r.description}</div>
+        <div class="sc-info">
+          <div>📍 ${r.address}</div>
+          <div>🕐 ${r.hours}</div>
+        </div>
+      </div>
+    `).join('');
+
+    // KTV
+    document.getElementById('ktvGrid').innerHTML = ktvs.map(k => `
+      <div class="service-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <span style="font-size:2rem">🎤</span>
+          <div>
+            <div class="sc-name">${k.name}</div>
+            <div class="sc-badge">⭐ ${k.rating} | ${k.rooms.length} 種包廂</div>
+          </div>
+        </div>
+        <div class="sc-desc">${k.description}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin:10px 0">
+          ${k.rooms.map(r => `<div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg-dark);border-radius:6px;font-size:.85rem"><span>${r.type}</span><span style="color:var(--gold);font-weight:600">NT$${r.price}/hr</span></div>`).join('')}
+        </div>
+        <div class="sc-info">
+          <div>📍 ${k.address}</div>
+          <div>🕐 ${k.hours}</div>
+        </div>
+        <button class="fc-btn" style="margin-top:12px" onclick="openKtvBooking('${k.id}')">立即預訂</button>
+      </div>
+    `).join('');
+
+    window.openKtvBooking = function(id) {
+      const user = Auth.requireLogin();
+      if (!user) return;
+      window.location.href = 'user/ktv.html';
+    };
+
+    // Entertainment
+    const entertainment = DB.getAll('entertainment');
+    document.getElementById('entGrid').innerHTML = entertainment.map(e => {
+      const icon = e.type === '按摩' ? '💆' : '💪';
+      return `
+        <div class="service-card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <div style="width:60px;height:60px;border-radius:10px;overflow:hidden;flex-shrink:0">
+              <img src="${e.image}" alt="${e.name}" style="width:100%;height:100%;object-fit:cover">
+            </div>
+            <div>
+              <div class="sc-name">${e.name}</div>
+              <div class="sc-badge">${icon} ${e.type} ⭐ ${e.rating}</div>
+            </div>
+          </div>
+          <div class="sc-discount">🎉 ${e.discount}</div>
+          <div class="sc-desc">${e.description}</div>
+          <div class="sc-info">
+            <div>📍 ${e.address}</div>
+            <div>🕐 ${e.hours}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Laundry
+    function statusText(s) { return s === 'idle' ? '✅ 可使用' : s === 'running' ? '🔄 使用中' : '✔️ 完成 - 請取回'; }
+    document.getElementById('laundryGrid').innerHTML = machines.map(m => `
+      <div class="feature-card" style="cursor:${m.status==='idle'?'pointer':'default'};${m.status!=='idle'?'opacity:.7':''}" onclick="${m.status==='idle'?`goToLaundry()`:''}">
+        <div class="fc-img" style="background:var(--bg-card2);font-size:3rem">${m.type === 'washer' ? '🫧' : '🌀'}</div>
+        <div class="fc-body" style="text-align:center">
+          <div class="fc-title">${m.name}</div>
+          <div class="fc-meta">${statusText(m.status)}</div>
+          ${m.status === 'running' && m.remainingMin > 0 ? `<div style="font-size:1.4rem;font-weight:700;color:var(--gold);margin-top:6px">${m.remainingMin} 分鐘</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    window.goToLaundry = function() {
+      const user = Auth.requireLogin();
+      if (!user) return;
+      window.location.href = 'user/laundry.html';
+    };
+
+    function showToast(msg) {
+      const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+      document.body.appendChild(t); setTimeout(() => t.remove(), 2500);
+    }
+  </script>
+</body>
+</html>
