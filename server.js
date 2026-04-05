@@ -18,44 +18,47 @@ const mimeTypes = {
   '.pdf': 'application/pdf',
 };
 
-const server = http.createServer((req, res) => {
-  let url = req.url.split('?')[0];
-
-  // Root → redirect to /platform/ so relative paths work
-  if (url === '/') {
-    res.writeHead(302, { 'Location': '/platform/' });
-    res.end();
-    return;
-  }
-
-  // Landing page
-  if (url === '/landing' || url === '/landing/') url = '/landing/index.html';
-
-  // If path has no extension and doesn't end with /, try adding /index.html
-  if (!path.extname(url) && !url.endsWith('/')) {
-    url = url + '/index.html';
-  }
-  if (url.endsWith('/')) {
-    url = url + 'index.html';
-  }
-
-  const filePath = path.join(__dirname, url);
-
+function serveFile(res, filePath) {
   fs.readFile(filePath, (err, data) => {
     if (err) {
       res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end('<h1>404 - Page Not Found</h1><p><a href="/platform/">Back to Home</a></p>');
       return;
     }
-
     const ext = path.extname(filePath).toLowerCase();
     const contentType = mimeTypes[ext] || 'application/octet-stream';
-
-    res.writeHead(200, {
-      'Content-Type': contentType,
-      'Cache-Control': 'public, max-age=3600',
-    });
+    res.writeHead(200, { 'Content-Type': contentType });
     res.end(data);
+  });
+}
+
+const server = http.createServer((req, res) => {
+  let url = req.url.split('?')[0];
+
+  // Root → redirect to /platform/
+  if (url === '/') {
+    res.writeHead(301, { 'Location': '/platform/' });
+    res.end();
+    return;
+  }
+
+  // Directory URLs → append index.html
+  if (url.endsWith('/')) url += 'index.html';
+
+  // Try the exact path first
+  const exactPath = path.join(__dirname, url);
+  fs.access(exactPath, fs.constants.F_OK, (err) => {
+    if (!err) {
+      serveFile(res, exactPath);
+    } else {
+      // If not found and no extension, try as directory
+      if (!path.extname(url)) {
+        const dirIndex = path.join(__dirname, url, 'index.html');
+        serveFile(res, dirIndex);
+      } else {
+        serveFile(res, exactPath); // Will 404
+      }
+    }
   });
 });
 
