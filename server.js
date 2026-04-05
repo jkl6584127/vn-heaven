@@ -21,8 +21,12 @@ const mimeTypes = {
 const server = http.createServer((req, res) => {
   let url = req.url.split('?')[0];
 
-  // Root redirects to platform
-  if (url === '/') url = '/platform/index.html';
+  // Root → redirect to /platform/ so relative paths work
+  if (url === '/') {
+    res.writeHead(302, { 'Location': '/platform/' });
+    res.end();
+    return;
+  }
 
   // Landing page
   if (url === '/landing' || url === '/landing/') url = '/landing/index.html';
@@ -40,7 +44,7 @@ const server = http.createServer((req, res) => {
   fs.readFile(filePath, (err, data) => {
     if (err) {
       res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end('<h1>404 - Page Not Found</h1><p><a href="/">Back to Home</a></p>');
+      res.end('<h1>404 - Page Not Found</h1><p><a href="/platform/">Back to Home</a></p>');
       return;
     }
 
