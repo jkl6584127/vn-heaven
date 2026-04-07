@@ -96,11 +96,16 @@ if (form) {
         submitBtn.disabled = true;
 
         try {
-            const formData = new FormData(form);
-            const response = await fetch(form.action, {
+            const payload = {
+                name: document.getElementById('name').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                line: document.getElementById('line').value.trim(),
+            };
+
+            const response = await fetch('/api/submissions', {
                 method: 'POST',
-                body: formData,
-                headers: { 'Accept': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
             });
 
             if (response.ok) {

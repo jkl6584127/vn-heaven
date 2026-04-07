@@ -3,6 +3,16 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
+const DATA_FILE = path.join(__dirname, 'data', 'submissions.json');
+
+// Ensure data directory exists
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+if (!fs.existsSync(DATA_FILE)) {
+  fs.writeFileSync(DATA_FILE, '[]', 'utf-8');
+}
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -32,8 +42,123 @@ function serveFile(res, filePath) {
   });
 }
 
+function readSubmissions() {
+  try {
+    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function writeSubmissions(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body));
+      } catch {
+        reject(new Error('Invalid JSON'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  });
+  res.end(JSON.stringify(data));
+}
+
 const server = http.createServer((req, res) => {
-  let url = req.url.split('?')[0];
+  const urlParts = req.url.split('?');
+  let url = urlParts[0];
+  const method = req.method;
+
+  // CORS preflight
+  if (method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    });
+    res.end();
+    return;
+  }
+
+  // === API Routes ===
+
+  // POST /api/submissions - create new submission
+  if (url === '/api/submissions' && method === 'POST') {
+    parseBody(req).then(body => {
+      const { name, phone, line } = body;
+      if (!name || !phone || !line) {
+        return sendJSON(res, 400, { error: '所有欄位皆為必填' });
+      }
+      const submissions = readSubmissions();
+      const entry = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name,
+        phone,
+        line,
+        createdAt: new Date().toISOString(),
+        read: false,
+      };
+      submissions.unshift(entry);
+      writeSubmissions(submissions);
+      sendJSON(res, 201, { success: true, id: entry.id });
+    }).catch(() => {
+      sendJSON(res, 400, { error: '無效的請求格式' });
+    });
+    return;
+  }
+
+  // GET /api/submissions - list all submissions
+  if (url === '/api/submissions' && method === 'GET') {
+    const submissions = readSubmissions();
+    sendJSON(res, 200, submissions);
+    return;
+  }
+
+  // DELETE /api/submissions/:id
+  if (url.startsWith('/api/submissions/') && method === 'DELETE') {
+    const id = url.split('/api/submissions/')[1];
+    let submissions = readSubmissions();
+    const before = submissions.length;
+    submissions = submissions.filter(s => s.id !== id);
+    if (submissions.length === before) {
+      return sendJSON(res, 404, { error: '找不到該筆資料' });
+    }
+    writeSubmissions(submissions);
+    sendJSON(res, 200, { success: true });
+    return;
+  }
+
+  // PATCH /api/submissions/:id/read - mark as read
+  if (url.match(/^\/api\/submissions\/[^/]+\/read$/) && method === 'PATCH') {
+    const id = url.split('/')[3];
+    const submissions = readSubmissions();
+    const entry = submissions.find(s => s.id === id);
+    if (!entry) {
+      return sendJSON(res, 404, { error: '找不到該筆資料' });
+    }
+    entry.read = true;
+    writeSubmissions(submissions);
+    sendJSON(res, 200, { success: true });
+    return;
+  }
+
+  // === Static File Serving ===
 
   // Root → redirect to /platform/
   if (url === '/') {
