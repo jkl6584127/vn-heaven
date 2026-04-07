@@ -1,9 +1,38 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data', 'submissions.json');
+
+// ===== Auth =====
+const ADMIN_USER = 'haha080808';
+const ADMIN_PASS_HASH = crypto.createHash('sha256').update('080808').digest('hex');
+const sessions = new Map(); // token -> { createdAt }
+
+function createSession() {
+  const token = crypto.randomBytes(32).toString('hex');
+  sessions.set(token, { createdAt: Date.now() });
+  return token;
+}
+
+function isValidSession(token) {
+  if (!token || !sessions.has(token)) return false;
+  const session = sessions.get(token);
+  // 24-hour expiry
+  if (Date.now() - session.createdAt > 24 * 60 * 60 * 1000) {
+    sessions.delete(token);
+    return false;
+  }
+  return true;
+}
+
+function requireAuth(req) {
+  const auth = req.headers['authorization'];
+  if (!auth || !auth.startsWith('Bearer ')) return false;
+  return isValidSession(auth.slice(7));
+}
 
 // Ensure data directory exists
 const dataDir = path.join(__dirname, 'data');
@@ -75,7 +104,7 @@ function sendJSON(res, statusCode, data) {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   });
   res.end(JSON.stringify(data));
 }
@@ -90,15 +119,50 @@ const server = http.createServer((req, res) => {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     });
     res.end();
     return;
   }
 
+  // === Auth API ===
+
+  // POST /api/auth/login
+  if (url === '/api/auth/login' && method === 'POST') {
+    parseBody(req).then(body => {
+      const { username, password } = body;
+      const passHash = crypto.createHash('sha256').update(password || '').digest('hex');
+      if (username === ADMIN_USER && passHash === ADMIN_PASS_HASH) {
+        const token = createSession();
+        sendJSON(res, 200, { success: true, token });
+      } else {
+        sendJSON(res, 401, { error: '帳號或密碼錯誤' });
+      }
+    }).catch(() => {
+      sendJSON(res, 400, { error: '無效的請求格式' });
+    });
+    return;
+  }
+
+  // POST /api/auth/verify
+  if (url === '/api/auth/verify' && method === 'POST') {
+    sendJSON(res, 200, { valid: requireAuth(req) });
+    return;
+  }
+
+  // POST /api/auth/logout
+  if (url === '/api/auth/logout' && method === 'POST') {
+    const auth = req.headers['authorization'];
+    if (auth && auth.startsWith('Bearer ')) {
+      sessions.delete(auth.slice(7));
+    }
+    sendJSON(res, 200, { success: true });
+    return;
+  }
+
   // === API Routes ===
 
-  // POST /api/submissions - create new submission
+  // POST /api/submissions - create new submission (public, no auth)
   if (url === '/api/submissions' && method === 'POST') {
     parseBody(req).then(body => {
       const { name, phone, line } = body;
@@ -123,15 +187,17 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // GET /api/submissions - list all submissions
+  // GET /api/submissions - list all submissions (auth required)
   if (url === '/api/submissions' && method === 'GET') {
+    if (!requireAuth(req)) return sendJSON(res, 401, { error: '請先登入' });
     const submissions = readSubmissions();
     sendJSON(res, 200, submissions);
     return;
   }
 
-  // DELETE /api/submissions/:id
+  // DELETE /api/submissions/:id (auth required)
   if (url.startsWith('/api/submissions/') && method === 'DELETE') {
+    if (!requireAuth(req)) return sendJSON(res, 401, { error: '請先登入' });
     const id = url.split('/api/submissions/')[1];
     let submissions = readSubmissions();
     const before = submissions.length;
@@ -144,8 +210,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // PATCH /api/submissions/:id/read - mark as read
+  // PATCH /api/submissions/:id/read - mark as read (auth required)
   if (url.match(/^\/api\/submissions\/[^/]+\/read$/) && method === 'PATCH') {
+    if (!requireAuth(req)) return sendJSON(res, 401, { error: '請先登入' });
     const id = url.split('/')[3];
     const submissions = readSubmissions();
     const entry = submissions.find(s => s.id === id);
@@ -158,8 +225,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // PATCH /api/submissions/:id - update status / note
+  // PATCH /api/submissions/:id - update status / note (auth required)
   if (url.match(/^\/api\/submissions\/[^/]+$/) && method === 'PATCH') {
+    if (!requireAuth(req)) return sendJSON(res, 401, { error: '請先登入' });
     const id = url.split('/')[3];
     parseBody(req).then(body => {
       const submissions = readSubmissions();

@@ -104,6 +104,24 @@ body {
     letter-spacing: 1px;
 }
 
+.btn-logout {
+    padding: 6px 16px;
+    background: transparent;
+    border: 1px solid var(--dark-4);
+    border-radius: 50px;
+    color: var(--gray-400);
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-logout:hover {
+    border-color: var(--red);
+    color: var(--red);
+}
+
 /* ===== Main ===== */
 .main {
     padding-top: 96px;

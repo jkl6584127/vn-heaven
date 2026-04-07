@@ -1,3 +1,34 @@
+// ===== Auth =====
+const TOKEN = sessionStorage.getItem('admin_token');
+
+function authHeaders() {
+    return { 'Authorization': 'Bearer ' + TOKEN };
+}
+
+function authJsonHeaders() {
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN };
+}
+
+// Redirect to login if no token
+if (!TOKEN) {
+    window.location.href = '/admin-forms/login.html';
+}
+
+// Verify token on load
+(async function checkAuth() {
+    try {
+        const res = await fetch('/api/auth/verify', { method: 'POST', headers: authHeaders() });
+        const data = await res.json();
+        if (!data.valid) {
+            sessionStorage.removeItem('admin_token');
+            window.location.href = '/admin-forms/login.html';
+        }
+    } catch {
+        // If verify fails, still try to proceed (server might just be slow)
+    }
+})();
+
+// ===== Elements =====
 const API = '/api/submissions';
 const tableBody = document.getElementById('tableBody');
 const searchInput = document.getElementById('searchInput');
@@ -20,7 +51,6 @@ function detectDuplicates() {
     const phoneMap = {};
     const lineMap = {};
 
-    // Build maps: value -> array of ids
     submissions.forEach(s => {
         const phone = s.phone.trim().toLowerCase();
         const line = s.line.trim().toLowerCase();
@@ -35,11 +65,8 @@ function detectDuplicates() {
         }
     });
 
-    // Find duplicates: keep the earliest (last in array since unshift), mark the rest
     Object.values(phoneMap).forEach(ids => {
         if (ids.length > 1) {
-            // The last element is the original (earliest submitted, since we unshift)
-            // Mark all except the last as duplicate
             ids.slice(0, -1).forEach(id => duplicateIds.add(id));
         }
     });
@@ -59,11 +86,22 @@ function getEffectiveStatus(s) {
     return s.contactStatus || '未聯絡';
 }
 
+// ===== Handle 401 =====
+function handle401(res) {
+    if (res.status === 401) {
+        sessionStorage.removeItem('admin_token');
+        window.location.href = '/admin-forms/login.html';
+        return true;
+    }
+    return false;
+}
+
 // ===== Fetch & Render =====
 async function loadData() {
     tableBody.innerHTML = '<tr class="empty-row"><td colspan="8">載入中...</td></tr>';
     try {
-        const res = await fetch(API);
+        const res = await fetch(API, { headers: authHeaders() });
+        if (handle401(res)) return;
         submissions = await res.json();
         detectDuplicates();
         updateStats();
@@ -86,7 +124,6 @@ function applyFilters() {
     const q = searchInput.value.trim().toLowerCase();
     let filtered = submissions;
 
-    // Status filter
     if (currentFilter !== 'all') {
         if (currentFilter === '重複') {
             filtered = filtered.filter(s => isDuplicate(s.id));
@@ -95,7 +132,6 @@ function applyFilters() {
         }
     }
 
-    // Search filter
     if (q) {
         filtered = filtered.filter(s =>
             s.name.toLowerCase().includes(q) ||
@@ -184,14 +220,14 @@ async function changeStatus(selectEl) {
     const id = selectEl.dataset.id;
     const newStatus = selectEl.value;
     try {
-        await fetch(`${API}/${id}`, {
+        const res = await fetch(`${API}/${id}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authJsonHeaders(),
             body: JSON.stringify({ contactStatus: newStatus }),
         });
+        if (handle401(res)) return;
         const s = submissions.find(x => x.id === id);
         if (s) s.contactStatus = newStatus;
-        // Update select styling
         selectEl.className = `status-select s-${newStatus}`;
         updateStats();
     } catch {
@@ -213,11 +249,12 @@ document.getElementById('noteSaveBtn').addEventListener('click', async () => {
     if (!pendingNoteId) return;
     const note = noteTextarea.value.trim();
     try {
-        await fetch(`${API}/${pendingNoteId}`, {
+        const res = await fetch(`${API}/${pendingNoteId}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authJsonHeaders(),
             body: JSON.stringify({ note }),
         });
+        if (handle401(res)) return;
         const s = submissions.find(x => x.id === pendingNoteId);
         if (s) s.note = note;
         applyFilters();
@@ -234,7 +271,8 @@ async function viewDetail(id) {
     if (!s) return;
 
     if (!s.read) {
-        await fetch(`${API}/${id}/read`, { method: 'PATCH' });
+        const res = await fetch(`${API}/${id}/read`, { method: 'PATCH', headers: authHeaders() });
+        if (handle401(res)) return;
         s.read = true;
         updateStats();
         const row = document.querySelector(`tr[data-id="${id}"]`);
@@ -286,7 +324,8 @@ function confirmDelete(id) {
 document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
     if (!pendingDeleteId) return;
     try {
-        await fetch(`${API}/${pendingDeleteId}`, { method: 'DELETE' });
+        const res = await fetch(`${API}/${pendingDeleteId}`, { method: 'DELETE', headers: authHeaders() });
+        if (handle401(res)) return;
         submissions = submissions.filter(s => s.id !== pendingDeleteId);
         detectDuplicates();
         updateStats();
@@ -308,6 +347,13 @@ document.getElementById('noteCancelBtn').addEventListener('click', () => noteMod
 detailModal.addEventListener('click', (e) => { if (e.target === detailModal) detailModal.classList.remove('active'); });
 deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) deleteModal.classList.remove('active'); });
 noteModal.addEventListener('click', (e) => { if (e.target === noteModal) noteModal.classList.remove('active'); });
+
+// ===== Logout =====
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await fetch('/api/auth/logout', { method: 'POST', headers: authHeaders() });
+    sessionStorage.removeItem('admin_token');
+    window.location.href = '/admin-forms/login.html';
+});
 
 // ===== Refresh =====
 refreshBtn.addEventListener('click', loadData);
