@@ -28,6 +28,8 @@
     --red: #e74c3c;
     --green: #4CAF50;
     --blue: #3b82f6;
+    --orange: #f39c12;
+    --purple: #9b59b6;
 }
 
 html {
@@ -43,7 +45,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 0 24px;
 }
@@ -62,7 +64,7 @@ body {
 }
 
 .topbar-inner {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -93,7 +95,6 @@ body {
 
 .topbar-label {
     font-size: 0.9rem;
-    color: var(--gray-400);
     font-weight: 500;
     padding: 6px 16px;
     background: rgba(201, 168, 76, 0.1);
@@ -112,9 +113,9 @@ body {
 /* ===== Stats Row ===== */
 .stats-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 20px;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
 }
 
 .stat-card {
@@ -141,6 +142,39 @@ body {
     color: var(--gray-400);
     margin-top: 4px;
     font-weight: 500;
+}
+
+/* ===== Filter Bar ===== */
+.filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 20px;
+    background: var(--dark-2);
+    border: 1px solid var(--dark-4);
+    border-radius: 50px;
+    color: var(--gray-400);
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.filter-btn:hover {
+    border-color: rgba(201, 168, 76, 0.3);
+    color: var(--gray-200);
+}
+
+.filter-btn.active {
+    background: rgba(201, 168, 76, 0.15);
+    border-color: var(--gold);
+    color: var(--gold);
 }
 
 /* ===== Table Section ===== */
@@ -240,11 +274,12 @@ body {
 .data-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 900px;
 }
 
 .data-table th {
     text-align: left;
-    padding: 14px 20px;
+    padding: 14px 16px;
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--gray-400);
@@ -256,8 +291,8 @@ body {
 }
 
 .data-table td {
-    padding: 16px 20px;
-    font-size: 0.95rem;
+    padding: 14px 16px;
+    font-size: 0.9rem;
     border-bottom: 1px solid rgba(255,255,255,0.04);
     vertical-align: middle;
 }
@@ -278,12 +313,16 @@ body {
     font-weight: 600;
 }
 
+.data-table tbody tr.row-duplicate {
+    background: rgba(231, 76, 60, 0.06);
+}
+
 .col-status {
-    width: 40px;
+    width: 36px;
 }
 
 .col-actions {
-    width: 140px;
+    width: 100px;
 }
 
 /* Status dot */
@@ -321,25 +360,178 @@ body {
 
 .time-cell {
     color: var(--gray-400);
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     white-space: nowrap;
+}
+
+/* ===== Contact Status Select ===== */
+.status-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--dark-3);
+    border: 1px solid var(--dark-4);
+    border-radius: 6px;
+    color: var(--gray-200);
+    padding: 6px 28px 6px 10px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239E9E9E'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    min-width: 100px;
+}
+
+.status-select:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+.status-select:hover {
+    border-color: rgba(201, 168, 76, 0.4);
+}
+
+/* Status-specific colors */
+.status-select.s-未聯絡 {
+    color: var(--gray-400);
+    border-color: var(--dark-4);
+}
+
+.status-select.s-已聯絡 {
+    color: var(--green);
+    border-color: rgba(76, 175, 80, 0.4);
+    background-color: rgba(76, 175, 80, 0.08);
+}
+
+.status-select.s-未接 {
+    color: var(--orange);
+    border-color: rgba(243, 156, 18, 0.4);
+    background-color: rgba(243, 156, 18, 0.08);
+}
+
+.status-select.s-假資料 {
+    color: var(--red);
+    border-color: rgba(231, 76, 60, 0.4);
+    background-color: rgba(231, 76, 60, 0.08);
+}
+
+/* Duplicate badge (replaces dropdown) */
+.status-badge-duplicate {
+    display: inline-block;
+    padding: 5px 12px;
+    background: rgba(231, 76, 60, 0.12);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    border-radius: 6px;
+    color: var(--red);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: default;
+}
+
+/* ===== Note Cell ===== */
+.note-cell {
+    max-width: 160px;
+}
+
+.note-preview {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.note-preview:hover {
+    background: var(--dark-3);
+}
+
+.note-text {
+    color: var(--gray-400);
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.note-text.has-note {
+    color: var(--gray-200);
+}
+
+.note-edit-icon {
+    font-size: 0.75rem;
+    color: var(--gray-600);
+    flex-shrink: 0;
+}
+
+.note-preview:hover .note-edit-icon {
+    color: var(--gold);
+}
+
+/* ===== Note Textarea (Modal) ===== */
+.note-textarea {
+    width: 100%;
+    background: var(--dark-3);
+    border: 1px solid var(--dark-4);
+    border-radius: var(--radius-sm);
+    color: var(--white);
+    font-size: 0.95rem;
+    font-family: inherit;
+    padding: 14px 16px;
+    resize: vertical;
+    min-height: 100px;
+    transition: var(--transition);
+    line-height: 1.6;
+}
+
+.note-textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
+}
+
+.note-textarea::placeholder {
+    color: var(--gray-600);
+}
+
+.btn-save {
+    padding: 10px 24px;
+    background: var(--gradient-gold);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--dark);
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-save:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(201, 168, 76, 0.3);
 }
 
 /* Action buttons */
 .action-btns {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
 .btn-action {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     border-radius: 6px;
     border: 1px solid var(--dark-4);
     background: transparent;
     color: var(--gray-400);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     transition: var(--transition);
     display: flex;
     align-items: center;
@@ -412,7 +604,7 @@ body {
 }
 
 .modal-sm {
-    max-width: 400px;
+    max-width: 420px;
 }
 
 @keyframes modalIn {
@@ -496,6 +688,12 @@ body {
     color: var(--gold-light);
 }
 
+.detail-value.status-已聯絡 { color: var(--green); }
+.detail-value.status-未聯絡 { color: var(--gray-400); }
+.detail-value.status-未接 { color: var(--orange); }
+.detail-value.status-假資料 { color: var(--red); }
+.detail-value.status-重複 { color: var(--red); font-weight: 700; }
+
 /* Modal action buttons */
 .modal-actions {
     display: flex;
@@ -539,6 +737,12 @@ body {
 }
 
 /* ===== Responsive ===== */
+@media (max-width: 968px) {
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
     .stats-row {
         grid-template-columns: 1fr;
@@ -574,11 +778,20 @@ body {
 
     .data-table th,
     .data-table td {
-        padding: 12px 14px;
+        padding: 12px 10px;
     }
 
     .topbar-label {
         display: none;
+    }
+
+    .filter-bar {
+        gap: 6px;
+    }
+
+    .filter-btn {
+        padding: 6px 14px;
+        font-size: 0.8rem;
     }
 }
 

@@ -32,13 +32,27 @@
                 <div class="stat-card-label">總表單數</div>
             </div>
             <div class="stat-card">
-                <div class="stat-card-number" id="unreadCount">—</div>
-                <div class="stat-card-label">未讀</div>
+                <div class="stat-card-number" id="uncontactedCount">—</div>
+                <div class="stat-card-label">未聯絡</div>
             </div>
             <div class="stat-card">
-                <div class="stat-card-number" id="todayCount">—</div>
-                <div class="stat-card-label">今日新增</div>
+                <div class="stat-card-number" id="contactedCount">—</div>
+                <div class="stat-card-label">已聯絡</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-card-number" id="duplicateCount">—</div>
+                <div class="stat-card-label">重複資料</div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="未聯絡">未聯絡</button>
+            <button class="filter-btn" data-filter="已聯絡">已聯絡</button>
+            <button class="filter-btn" data-filter="未接">未接</button>
+            <button class="filter-btn" data-filter="假資料">假資料</button>
+            <button class="filter-btn" data-filter="重複">重複</button>
         </div>
 
         <!-- Table Section -->
@@ -62,13 +76,15 @@
                             <th>姓名</th>
                             <th>電話</th>
                             <th>LINE ID</th>
+                            <th>聯絡狀態</th>
+                            <th>備註</th>
                             <th>送出時間</th>
                             <th class="col-actions">操作</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
                         <tr class="empty-row">
-                            <td colspan="6">載入中...</td>
+                            <td colspan="8">載入中...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -101,6 +117,23 @@
             <div class="modal-actions">
                 <button class="btn-cancel" id="deleteCancelBtn">取消</button>
                 <button class="btn-delete-confirm" id="deleteConfirmBtn">確認刪除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Note Edit Modal -->
+<div class="modal-overlay" id="noteModal">
+    <div class="modal-card modal-sm">
+        <div class="modal-header">
+            <h3>編輯備註</h3>
+            <button class="modal-close" id="noteModalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+            <textarea id="noteTextarea" class="note-textarea" rows="4" placeholder="輸入備註內容..."></textarea>
+            <div class="modal-actions" style="margin-top: 16px;">
+                <button class="btn-cancel" id="noteCancelBtn">取消</button>
+                <button class="btn-save" id="noteSaveBtn">儲存</button>
             </div>
         </div>
     </div>

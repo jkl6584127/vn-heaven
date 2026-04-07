@@ -158,6 +158,25 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // PATCH /api/submissions/:id - update status / note
+  if (url.match(/^\/api\/submissions\/[^/]+$/) && method === 'PATCH') {
+    const id = url.split('/')[3];
+    parseBody(req).then(body => {
+      const submissions = readSubmissions();
+      const entry = submissions.find(s => s.id === id);
+      if (!entry) {
+        return sendJSON(res, 404, { error: '找不到該筆資料' });
+      }
+      if (body.contactStatus !== undefined) entry.contactStatus = body.contactStatus;
+      if (body.note !== undefined) entry.note = body.note;
+      writeSubmissions(submissions);
+      sendJSON(res, 200, { success: true });
+    }).catch(() => {
+      sendJSON(res, 400, { error: '無效的請求格式' });
+    });
+    return;
+  }
+
   // === Static File Serving ===
 
   // Root → redirect to /platform/
