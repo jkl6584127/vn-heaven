@@ -9,23 +9,26 @@ function authJsonHeaders() {
     return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN };
 }
 
-// Redirect to login if no token
-if (!TOKEN) {
-    window.location.href = '/admin-forms/login.html';
+function redirectToLogin() {
+    sessionStorage.removeItem('admin_token');
+    window.location.replace('/admin-forms/login.html');
 }
 
-// Verify token on load
-(async function checkAuth() {
+// Double-check: no token → leave immediately
+if (!TOKEN) { redirectToLogin(); }
+
+// Verify token with server before showing anything
+(async function gate() {
     try {
         const res = await fetch('/api/auth/verify', { method: 'POST', headers: authHeaders() });
         const data = await res.json();
-        if (!data.valid) {
-            sessionStorage.removeItem('admin_token');
-            window.location.href = '/admin-forms/login.html';
-        }
+        if (!data.valid) { redirectToLogin(); return; }
     } catch {
-        // If verify fails, still try to proceed (server might just be slow)
+        // Network error — allow page if token exists (offline tolerance)
     }
+    // Auth passed — reveal the page
+    document.body.style.visibility = 'visible';
+    init();
 })();
 
 // ===== Elements =====
@@ -379,5 +382,7 @@ function formatTimeFull(iso) {
     return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 }
 
-// ===== Init =====
-loadData();
+// ===== Init (called after auth gate passes) =====
+function init() {
+    loadData();
+}
